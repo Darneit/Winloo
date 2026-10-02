@@ -21,3 +21,18 @@ header .brand-logo{width:150px;height:62px}
 footer .brand{display:inline-flex;padding:8px 12px;background:#f5f1e9;border-radius:2px}
 footer .brand-logo{width:172px;height:74px;object-position:center}
 @media(max-width:600px){header .brand-logo{width:130px;height:56px}footer .brand-logo{width:155px;height:68px}}
+
+/* Industrial contracting content */
+.industrial-grid{grid-template-columns:repeat(3,1fr)}
+.industrial-services-section{background:#f7f3eb}
+.industrial-detail-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+.industrial-detail{background:#fff;border:1px solid var(--line);padding:28px;min-height:300px}
+.industrial-detail h3{font:600 1.55rem/1.1 var(--serif);margin:.6rem 0 1rem}
+.industrial-detail ul{margin:0;padding-left:1.1rem;color:var(--muted);font-size:.87rem;line-height:1.9}
+.trust-facts{grid-template-columns:repeat(5,1fr)}
+.trust-facts .fact{padding:28px 18px 8px}
+.trust-facts .fact b{font-size:1.2rem}
+.values-five{grid-template-columns:repeat(5,1fr)}
+.values-five .value{min-height:220px}
+@media(max-width:1100px){.industrial-grid{grid-template-columns:repeat(2,1fr)}.trust-facts,.values-five{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:700px){.industrial-grid,.industrial-detail-grid,.trust-facts,.values-five{grid-template-columns:1fr}.industrial-detail{min-height:auto}}
