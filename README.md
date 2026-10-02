@@ -1,23 +1,26 @@
 # Winloo Contracting Company LLP Website
 
-Static production-ready frontend for Winloo, centered on industrial contracting, steel, piping, civil and infrastructure capabilities.
+Production-ready static corporate website for Winloo Contracting Company LLP.
 
-## Main pages
-- Home
-- About
-- Services
-- Projects
-- Careers
-- Contact
+## Primary positioning
+- Industrial contracting
+- Steel structure & fabrication
+- Steel erection & installation
+- Pre-engineered steel buildings
+- Piping / pipe racks
+- Civil & infrastructure
+- Maintenance
+- Engineering & construction
 
-## Source basis
-The official Winloo company profile is the primary factual source. The existing approved website is retained as a secondary source for the Design & Digital Engineering project subsection. Unsupported certification, vendor-status, project-value and client-relationship claims are intentionally avoided.
+## Source hierarchy
+- Existing website/repository: design and code source of truth
+- Official Winloo company profile: factual source of truth
+
+## Hosting
+The project is static and compatible with Cloudflare Workers/Pages or any standard static host.
 
 ## Forms
-The site is static. Project and career forms validate in-browser and open a pre-filled email to `info@winloogroup.com`. File selections must be attached manually to the email draft. The markup is structured so a server-side endpoint can replace this fallback without redesigning the forms.
+The enquiry and careers forms currently validate client-side and open a pre-addressed email draft. A server-side form endpoint, spam protection, secure upload handling and notification workflow remain backend work.
 
-## Deployment
-Publish the repository root on Cloudflare Pages. No build command is required.
-
-## Before final-domain launch
-`robots.txt` currently blocks crawling because the present deployment is staging. Change it to `Allow: /` after the final custom domain is connected and verified.
+## SEO and accessibility
+The project includes canonical URLs, Open Graph metadata, Organization structured data, robots.txt, sitemap.xml, accessible headings, keyboard focus states and reduced-motion support.
