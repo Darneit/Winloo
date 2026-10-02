@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 340" role="img" aria-labelledby="title desc">
+<title id="title">Winloo Contracting Company LLP</title>
+<desc id="desc">Gold WLCC emblem with light company name for dark backgrounds</desc>
+<g fill="none" stroke="#D5A20A" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="210" cy="112" r="88" stroke-width="11"/>
+  <path d="M145 96 L172 70 L193 87 L218 55 L244 82 L263 66 L282 91" stroke-width="9"/>
+  <path d="M132 127 C163 142 203 142 241 130 C261 124 279 124 291 127" stroke-width="10"/>
+  <path d="M137 148 C164 161 195 163 225 156 C250 150 271 151 286 158" stroke-width="9"/>
+  <path d="M146 168 C174 178 208 180 239 174 C257 171 273 173 283 178" stroke-width="8"/>
+</g>
+<text x="210" y="121" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="42" font-weight="800" letter-spacing="1" fill="#F5F1E9">WLCC</text>
+<text x="210" y="245" text-anchor="middle" direction="rtl" unicode-bidi="bidi-override" font-family="Arial,'Noto Sans Arabic',sans-serif" font-size="27" font-weight="700" fill="#F5F1E9">شركة وينلو للمقاولات المحدودة</text>
+<text x="210" y="284" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="20" font-weight="800" letter-spacing="1.2" fill="#F5F1E9">WINLOO CONTRACTING COMPANY LLP</text>
+</svg>
