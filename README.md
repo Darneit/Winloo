@@ -1,44 +1,23 @@
-# Winloo Frontend Website
+# Winloo Contracting Company LLP Website
 
-A static, frontend-only rebuild of the Winloo Group website using the approved editorial/industrial design direction.
+Static production-ready frontend for Winloo, centered on industrial contracting, steel, piping, civil and infrastructure capabilities.
 
-## Pages
-- `index.html` — Home
-- `about.html` — About
-- `architecture.html` — Architecture
-- `interior.html` — Interior & Fit-Out
-- `bim.html` — BIM & Engineering
-- `lighting.html` — Lighting
-- `contracting.html` — Contracting & Industrial Works
-- `projects.html` — Projects
-- `contact.html` — Contact
-- `404.html`, `privacy.html`, `terms.html`
-
-## Run locally
-From the project folder:
-
-```bash
-python -m http.server 8000
-```
-
-Then open `http://localhost:8000`.
-
-## Editing
-- Global styling: `assets/css/style.css`
-- Shared interactions: `assets/js/main.js`
-- Images: `assets/images/`
-- Logo assets: `assets/logo/`
-- Navigation/footer markup is repeated in each static HTML page for maximum host compatibility.
-- Contact details are present in `contact.html` and repeated in the footer of each page.
-
-## Form behavior
-The contact form performs client-side HTML validation only. It does not send data. On valid submission it shows: “Form submission will be enabled when the backend is connected.”
-
-## Backend
-No backend, database, authentication, email integration, CMS, Supabase, Firebase, API routes or serverless functions are included.
+## Main pages
+- Home
+- About
+- Services
+- Projects
+- Careers
+- Contact
 
 ## Source basis
-Content was derived from the supplied Winloo company profile and the current Winloo public website. The profile is used for company background, contracting capabilities, resources, industries, industrial project scopes and contact details; the public website is used for architecture, interior, lighting and BIM service material. Unsupported legal policies, social links, certifications, dates, metrics and project values were not invented.
+The official Winloo company profile is the primary factual source. The existing approved website is retained as a secondary source for the Design & Digital Engineering project subsection. Unsupported certification, vendor-status, project-value and client-relationship claims are intentionally avoided.
+
+## Forms
+The site is static. Project and career forms validate in-browser and open a pre-filled email to `info@winloogroup.com`. File selections must be attached manually to the email draft. The markup is structured so a server-side endpoint can replace this fallback without redesigning the forms.
 
 ## Deployment
-This project is suitable for GitHub Pages, Netlify, Cloudflare Pages or standard static hosting. Upload the project root as the published directory.
+Publish the repository root on Cloudflare Pages. No build command is required.
+
+## Before final-domain launch
+`robots.txt` currently blocks crawling because the present deployment is staging. Change it to `Allow: /` after the final custom domain is connected and verified.
