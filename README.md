@@ -20,7 +20,7 @@ Production-ready static corporate website for Winloo Contracting Company LLP.
 The project is static and compatible with Cloudflare Workers/Pages or any standard static host.
 
 ## Forms
-The enquiry and careers forms currently validate client-side and open a pre-addressed email draft. A server-side form endpoint, spam protection, secure upload handling and notification workflow remain backend work.
+The enquiry and careers forms currently validate client-side and open a pre-addressed email draft. A server-side form endpoint, spam protection, upload handling and notification workflow remain optional backend work.
 
-## SEO and accessibility
-The project includes canonical URLs, Open Graph metadata, Organization structured data, robots.txt, sitemap.xml, accessible headings, keyboard focus states and reduced-motion support.
+## SEO
+The project includes canonical URLs, Open Graph metadata, Organization structured data, robots.txt, sitemap.xml, accessible headings, focus states and reduced-motion support.
