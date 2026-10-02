@@ -3,6 +3,7 @@
   const mobileToggle = document.querySelector('.mobile-toggle');
   const mobilePanel = document.querySelector('.mobile-panel');
   const scrollTop = document.querySelector('.scroll-top');
+  const dropdowns = document.querySelectorAll('.dropdown');
 
   // Editorial-style scroll progress indicator.
   const progress = document.createElement('div');
@@ -33,6 +34,25 @@
     mobileToggle?.setAttribute('aria-expanded', open ? 'true' : 'false');
   });
   mobilePanel?.querySelectorAll('a').forEach(link => link.addEventListener('click', closeMobile));
+
+  dropdowns.forEach(dropdown => {
+    const button = dropdown.querySelector('.dropbtn');
+    button?.addEventListener('click', event => {
+      event.preventDefault();
+      const willOpen = !dropdown.classList.contains('open');
+      dropdowns.forEach(item => item.classList.remove('open'));
+      dropdown.classList.toggle('open', willOpen);
+      button.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+    });
+  });
+  document.addEventListener('click', event => {
+    dropdowns.forEach(dropdown => {
+      if (!dropdown.contains(event.target)) {
+        dropdown.classList.remove('open');
+        dropdown.querySelector('.dropbtn')?.setAttribute('aria-expanded', 'false');
+      }
+    });
+  });
   addEventListener('keydown', e => { if (e.key === 'Escape') closeMobile(); });
   scrollTop?.addEventListener('click', () => scrollTo({ top: 0, behavior: 'smooth' }));
 
