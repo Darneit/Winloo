@@ -10,3 +10,45 @@
 @media(max-width:1100px){.nav-links{display:none}.mobile-toggle{display:block}.header-cta{display:none}.mobile-panel.open{display:block;position:absolute;top:79px;left:0;right:0;background:#f8f5ee;color:#111;padding:18px 28px 26px;border-bottom:1px solid var(--line);box-shadow:0 15px 35px rgba(0,0,0,.1)}.mobile-panel a{display:block;padding:10px 0;font-size:12px;text-transform:uppercase;letter-spacing:.08em}.mobile-panel .mobile-sub{padding:8px 0 0 16px;color:#646966}.featured-projects{grid-template-columns:1fr}.feature-project-stack{grid-template-columns:1fr 1fr;grid-template-rows:none}.feature-project-large{min-height:560px}.service-editorial-grid{grid-template-columns:1fr 1fr}.service-editorial-card.service-wide{grid-column:span 1}.industry-list{grid-template-columns:repeat(3,1fr)}.project-grid{grid-template-columns:repeat(2,1fr)}.values-grid{grid-template-columns:repeat(2,1fr)}.footer-grid{grid-template-columns:1fr 1fr}.lod-journey{overflow-x:auto;padding-bottom:14px}.office-maps{grid-template-columns:1fr}}
 @media(max-width:760px){.container{width:min(calc(100% - 30px),var(--max))}.section{padding:76px 0}.nav{height:72px}.brand img{width:39px;height:39px}.mobile-panel.open{top:71px}.display{font-size:clamp(51px,16vw,78px)}.h2{font-size:clamp(36px,11vw,54px)}.hero-content{padding:110px 0 28px}.hero-copy-wrap{padding:36px 0}.hero-copy{font-size:15px}.hero-meta{gap:18px}.hero-meta span:last-child{display:none}.hero-topline{gap:12px}.hero-topline span+span{padding-left:12px}.signal-track{justify-content:flex-start;overflow-x:auto}.split-intro,.two-col,.capability-banner,.scale-grid,.presence,.service-detail,.contact-grid{grid-template-columns:1fr;gap:38px}.section-head{align-items:start;flex-direction:column;gap:22px}.featured-projects{display:block}.feature-project,.feature-project-large{min-height:430px;margin-bottom:14px}.feature-project-stack{display:block}.feature-project-overlay{padding:20px;grid-template-columns:auto 1fr auto}.feature-project-overlay p{display:none}.service-editorial-grid{display:block}.service-editorial-card{display:block;height:360px;margin-bottom:12px}.project-grid,.case-grid{grid-template-columns:1fr}.presence{min-height:auto}.presence .image-panel{min-height:390px}.presence-copy{padding:58px 22px}.industry-list{grid-template-columns:repeat(2,1fr)}.industry-list span{min-height:82px;font-size:18px}.stat-row{grid-template-columns:1fr 1fr}.stat{padding:25px 15px;border-bottom:1px solid rgba(255,255,255,.13)}.stat:nth-child(2){border-right:0}.stat strong{font-size:36px}.feature-project-stack .feature-project{min-height:360px}.timeline{grid-template-columns:1fr}.values-grid{grid-template-columns:1fr}.service-detail:nth-child(even) .detail-media{order:0}.bim-lod{grid-template-columns:repeat(2,1fr)}.form-grid{grid-template-columns:1fr}.footer-grid{grid-template-columns:1fr}.footer-bottom{flex-direction:column;gap:8px}.page-hero{padding:145px 0 75px}.page-hero.has-image{min-height:520px}.feature-list{grid-template-columns:1fr}.hero-actions{gap:8px}.btn{width:100%}.lod-journey{grid-template-columns:repeat(11,max-content)}.lod-line{width:44px}.office-map-card iframe{height:240px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}.reveal{opacity:1;transform:none}}
+
+
+/* 2026-10-02 brand lockup update */
+.site-header,
+.site-header.hero-mode{
+  background:rgba(248,246,240,.97);
+  backdrop-filter:blur(18px);
+  border-bottom-color:rgba(17,23,25,.09);
+}
+.nav{height:96px}
+.brand{min-width:170px}
+.brand img{
+  width:auto;
+  height:78px;
+  max-width:172px;
+  object-fit:contain;
+  filter:none!important;
+}
+.brand-copy{display:none!important}
+.hero-mode .nav-links,
+.hero-mode .mobile-toggle{color:var(--ink)!important}
+.hero-mode .header-cta{color:var(--ink)!important;border-color:var(--gold-dark)!important}
+.site-header.scrolled .brand img{filter:none!important}
+.page-hero{padding-top:198px}
+.hero-content{padding-top:150px}
+.footer-brand{
+  width:190px;
+  height:150px;
+  display:block!important;
+  background:url("../logo/logo.svg") left center/contain no-repeat;
+}
+.footer-brand img,
+.footer-brand b{display:none!important}
+.site-footer .footer-grid>div:first-child{min-width:210px}
+@media(max-width:900px){
+  .nav{height:84px}
+  .brand{min-width:120px}
+  .brand img{height:66px;max-width:145px}
+  .page-hero{padding-top:165px}
+  .hero-content{padding-top:132px}
+  .footer-brand{width:160px;height:128px}
+}
