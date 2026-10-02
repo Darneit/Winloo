@@ -110,3 +110,16 @@
     }
   });
 })();
+
+
+  // Use the isolated gold WLCC emblem as the favicon on every page.
+  (() => {
+    let icon = document.querySelector('link[rel~="icon"]');
+    if (!icon) {
+      icon = document.createElement('link');
+      icon.rel = 'icon';
+      document.head.appendChild(icon);
+    }
+    icon.type = 'image/svg+xml';
+    icon.href = 'assets/logo/favicon.svg';
+  })();
