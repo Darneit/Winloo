@@ -68,3 +68,18 @@
   .logo-hyundai img{max-height:44px}
   .logo-jgc img{max-width:126px}
 }
+
+/* Backend-powered forms and careers */
+.form-submit-status{margin-top:12px;font-size:.9rem;line-height:1.5}
+.form-submit-status.success{color:#2f7d32}
+.form-submit-status.error{color:#b42318}
+button[disabled]{cursor:not-allowed;opacity:.65}
+.jobs-list{display:grid;gap:18px;margin-top:22px}
+.job-card{border:1px solid rgba(17,23,25,.12);padding:24px;background:#fff}
+.job-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:14px}
+.job-card h3{margin:4px 0 0;font-size:1.35rem}
+.job-meta{display:flex;flex-wrap:wrap;gap:8px 14px;margin:0 0 14px;font-size:.86rem;opacity:.72}
+.job-card p{margin-bottom:14px}
+.job-card ul{margin:0 0 20px;padding-left:20px}
+.job-card li+li{margin-top:6px}
+@media (max-width:700px){.job-card{padding:20px}.job-card-top{display:block}.job-card-top .tag{display:inline-block;margin-top:10px}}
