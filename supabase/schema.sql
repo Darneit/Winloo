@@ -229,3 +229,19 @@ with check (exists (select 1 from public.admin_users a where a.user_id = (select
 create policy "admins delete jobs"
 on public.jobs for delete to authenticated
 using (exists (select 1 from public.admin_users a where a.user_id = (select auth.uid())));
+
+
+-- Runtime grants required by PostgREST/Edge Functions.
+grant usage on schema public to anon, authenticated, service_role;
+
+grant select on public.jobs to anon, authenticated, service_role;
+grant select on public.admin_users to anon;
+
+grant select, insert, update, delete on
+  public.admin_users,
+  public.jobs,
+  public.enquiries,
+  public.enquiry_files,
+  public.applications,
+  public.application_files
+to authenticated, service_role;
