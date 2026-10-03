@@ -53,11 +53,49 @@ async function getTurnstileToken(form){
 }
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 
+function validateUploadFiles(form,kind){
+  const input=kind==='career'?form.querySelector('[name="cv"]'):form.querySelector('[name="documents"]');
+  if(!input)return null;
+  const files=[...input.files];
+  if(kind==='enquiry'&&files.length>5)return 'Please upload no more than 5 files.';
+  const max=10*1024*1024;
+  const allowed=kind==='career'?new Set(['pdf','doc','docx']):new Set(['pdf','doc','docx','xls','xlsx','dwg','dxf','zip']);
+  for(const file of files){
+    const ext=(file.name.split('.').pop()||'').toLowerCase();
+    if(file.size>max)return file.name+' is larger than 10 MB.';
+    if(!allowed.has(ext))return file.name+' is not an allowed file type.';
+  }
+  return null;
+}
+function submitFormWithProgress(url,headers,body,onProgress){
+  return new Promise((resolve,reject)=>{
+    const xhr=new XMLHttpRequest();
+    xhr.open('POST',url,true);
+    Object.entries(headers).forEach(([k,v])=>xhr.setRequestHeader(k,v));
+    xhr.upload.onprogress=e=>{
+      if(e.lengthComputable)onProgress?.(Math.round((e.loaded/e.total)*100));
+    };
+    xhr.onload=()=>{
+      let data={};try{data=xhr.responseText?JSON.parse(xhr.responseText):{}}catch{}
+      resolve({ok:xhr.status>=200&&xhr.status<300,status:xhr.status,data});
+    };
+    xhr.onerror=()=>reject(new Error('Network error. Please try again.'));
+    xhr.send(body);
+  });
+}
+
 document.querySelectorAll('form[data-email-form]').forEach(form=>form.addEventListener('submit',async e=>{
   e.preventDefault();
   if(!form.checkValidity())return form.reportValidity();
   const kind=form.dataset.emailForm;
   const endpoint=kind==='career'?'submit-application':'submit-enquiry';
+  const uploadError=validateUploadFiles(form,kind);
+  if(uploadError){
+    let existing=form.querySelector('.form-submit-status');
+    if(!existing){existing=document.createElement('div');existing.className='form-submit-status';form.appendChild(existing)}
+    existing.textContent=uploadError;existing.classList.add('error');
+    return;
+  }
   const button=form.querySelector('button[type="submit"]');
   let status=form.querySelector('.form-submit-status');
   if(!status){status=document.createElement('div');status.className='form-submit-status';status.setAttribute('aria-live','polite');button?.closest('.field')?.appendChild(status)}
@@ -66,12 +104,13 @@ document.querySelectorAll('form[data-email-form]').forEach(form=>form.addEventLi
   if(status){status.textContent='';status.classList.remove('success','error')}
   try{
     const verification=await getTurnstileToken(form);
-    const response=await fetch(`${SUPABASE_URL}/functions/v1/${endpoint}`,{
-      method:'POST',
-      headers:{...supabaseHeaders,'X-Turnstile-Token':verification.token},
-      body:new FormData(form)
-    });
-    const result=await response.json().catch(()=>({}));
+    const response=await submitFormWithProgress(
+      `${SUPABASE_URL}/functions/v1/${endpoint}`,
+      {...supabaseHeaders,'X-Turnstile-Token':verification.token},
+      new FormData(form),
+      pct=>{if(status)status.textContent=pct<100?`Uploading… ${pct}%`:'Processing…';}
+    );
+    const result=response.data||{};
     if(!response.ok)throw new Error(result.error||'Submission failed. Please try again.');
     form.reset();
     form.querySelectorAll('.file-selection').forEach(el=>el.textContent='');
