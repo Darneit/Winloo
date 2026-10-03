@@ -28,12 +28,14 @@ document.querySelectorAll('form[data-email-form]').forEach(form=>form.addEventLi
     const response=await fetch(`${SUPABASE_URL}/functions/v1/${endpoint}`,{method:'POST',headers:supabaseHeaders,body:new FormData(form)});
     const result=await response.json().catch(()=>({}));
     if(!response.ok)throw new Error(result.error||'Submission failed. Please try again.');
-    if(status){status.textContent=kind==='career'?'Application submitted successfully. Thank you for applying.':'Project enquiry submitted successfully. Our team will review it.';status.classList.add('success')}
     form.reset();
     form.querySelectorAll('.file-selection').forEach(el=>el.textContent='');
     if(kind==='career'){
       const jobId=form.querySelector('[name="job_id"]');
       if(jobId)jobId.value='';
+      window.location.href='application-thank-you.html';
+    }else{
+      window.location.href='enquiry-thank-you.html';
     }
   }catch(err){
     if(status){status.textContent=err?.message||'Something went wrong. Please try again.';status.classList.add('error')}
