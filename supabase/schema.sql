@@ -184,3 +184,48 @@ using (
   bucket_id = 'winloo-submissions'
   and exists (select 1 from public.admin_users a where a.user_id = (select auth.uid()))
 );
+
+
+-- Security/performance hardening
+revoke execute on function public.rls_auto_enable() from public, anon, authenticated;
+
+create index if not exists idx_application_files_application_id on public.application_files(application_id);
+create index if not exists idx_applications_job_id on public.applications(job_id);
+create index if not exists idx_enquiry_files_enquiry_id on public.enquiry_files(enquiry_id);
+create index if not exists idx_jobs_public_listing on public.jobs(status, sort_order, published_at, closing_date);
+create index if not exists idx_enquiries_created_at on public.enquiries(created_at desc);
+create index if not exists idx_applications_created_at on public.applications(created_at desc);
+
+drop policy if exists "published jobs are public" on public.jobs;
+drop policy if exists "admins manage jobs" on public.jobs;
+drop policy if exists "jobs select access" on public.jobs;
+drop policy if exists "admins insert jobs" on public.jobs;
+drop policy if exists "admins update jobs" on public.jobs;
+drop policy if exists "admins delete jobs" on public.jobs;
+
+create policy "jobs select access"
+on public.jobs for select to anon, authenticated
+using (
+  (
+    status = 'published'
+    and (published_at is null or published_at <= now())
+    and (closing_date is null or closing_date >= current_date)
+  )
+  or (
+    (select auth.uid()) is not null
+    and exists (select 1 from public.admin_users a where a.user_id = (select auth.uid()))
+  )
+);
+
+create policy "admins insert jobs"
+on public.jobs for insert to authenticated
+with check (exists (select 1 from public.admin_users a where a.user_id = (select auth.uid())));
+
+create policy "admins update jobs"
+on public.jobs for update to authenticated
+using (exists (select 1 from public.admin_users a where a.user_id = (select auth.uid())))
+with check (exists (select 1 from public.admin_users a where a.user_id = (select auth.uid())));
+
+create policy "admins delete jobs"
+on public.jobs for delete to authenticated
+using (exists (select 1 from public.admin_users a where a.user_id = (select auth.uid())));
