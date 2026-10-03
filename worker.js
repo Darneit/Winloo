@@ -58,8 +58,12 @@ export default {
     const responseHeaders = new Headers(upstream.headers);
     responseHeaders.delete('access-control-allow-origin');
     responseHeaders.delete('access-control-allow-credentials');
+    responseHeaders.delete('content-length');
+    responseHeaders.delete('content-encoding');
 
-    return new Response(upstream.body, {
+    const body = await upstream.arrayBuffer();
+
+    return new Response(body, {
       status: upstream.status,
       statusText: upstream.statusText,
       headers: responseHeaders,
