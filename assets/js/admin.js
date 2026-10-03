@@ -6,6 +6,13 @@ const $$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 const fmt=d=>d?new Date(d).toLocaleString():'—';
 let session=null,enquiries=[],applications=[],jobs=[];
+let liveStarted=false;
+let liveTimer=null;
+let liveBusy=false;
+let initialLiveSnapshot=true;
+let enquiryFingerprint='';
+let applicationFingerprint='';
+let jobsFingerprint='';
 
 function authHeaders(extra={}){
   return {apikey:SUPABASE_ANON_KEY,Authorization:`Bearer ${session?.access_token||SUPABASE_ANON_KEY}`,...extra};
@@ -58,7 +65,10 @@ async function boot(){
 async function enterAdmin(){
   showAdmin();
   $('#admin-user').textContent=session?.user?.email||'Administrator';
-  try{await refreshAll()}catch(err){
+  try{
+    await refreshAll();
+    startLiveUpdates();
+  }catch(err){
     const recent=$('#recent-activity');
     if(recent)recent.innerHTML='<p>Admin loaded, but dashboard data could not be loaded: '+esc(err.message)+'</p>';
   }
@@ -85,10 +95,73 @@ $$('.admin-nav').forEach(btn=>btn.addEventListener('click',()=>{
   $('#panel-title').textContent=btn.textContent.trim();
 }));
 
-async function refreshAll(){await Promise.all([loadEnquiries(),loadApplications(),loadJobs()]);renderOverview()}
-async function loadEnquiries(){enquiries=await api('/rest/v1/enquiries?select=*&order=created_at.desc')||[];renderEnquiries()}
-async function loadApplications(){applications=await api('/rest/v1/applications?select=*,jobs(title)&order=created_at.desc')||[];renderApplications()}
-async function loadJobs(){jobs=await api('/rest/v1/jobs?select=*&order=sort_order.asc,created_at.desc')||[];renderJobs()}
+async function refreshAll(){
+  await Promise.all([loadEnquiries(true),loadApplications(true),loadJobs(true)]);
+  renderOverview();
+  updateNavBadges();
+  initialLiveSnapshot=false;
+}
+async function loadEnquiries(force=false){
+  const next=await api('/rest/v1/enquiries?select=*&order=created_at.desc')||[];
+  const fp=JSON.stringify(next.map(x=>[x.id,x.status,x.updated_at]));
+  if(force||fp!==enquiryFingerprint){
+    const oldIds=new Set(enquiries.map(x=>x.id));
+    const added=initialLiveSnapshot?[]:next.filter(x=>!oldIds.has(x.id));
+    enquiries=next;enquiryFingerprint=fp;renderEnquiries();renderOverview();updateNavBadges();
+    if(added.length)showLiveToast(added.length===1?'New enquiry received':added.length+' new enquiries received');
+  }
+}
+async function loadApplications(force=false){
+  const next=await api('/rest/v1/applications?select=*,jobs(title)&order=created_at.desc')||[];
+  const fp=JSON.stringify(next.map(x=>[x.id,x.status,x.updated_at,x.job_id]));
+  if(force||fp!==applicationFingerprint){
+    const oldIds=new Set(applications.map(x=>x.id));
+    const added=initialLiveSnapshot?[]:next.filter(x=>!oldIds.has(x.id));
+    applications=next;applicationFingerprint=fp;renderApplications();renderOverview();updateNavBadges();
+    if(added.length)showLiveToast(added.length===1?'New application received':added.length+' new applications received');
+  }
+}
+async function loadJobs(force=false){
+  const next=await api('/rest/v1/jobs?select=*&order=sort_order.asc,created_at.desc')||[];
+  const fp=JSON.stringify(next.map(x=>[x.id,x.status,x.updated_at,x.sort_order]));
+  if(force||fp!==jobsFingerprint){
+    jobs=next;jobsFingerprint=fp;renderJobs();renderOverview();updateNavBadges();
+  }
+}
+function setBadge(id,count){
+  const el=$(id);if(!el)return;
+  el.textContent=String(count);
+  el.hidden=count<1;
+}
+function updateNavBadges(){
+  setBadge('#badge-enquiries',enquiries.filter(x=>x.status==='new').length);
+  setBadge('#badge-applications',applications.filter(x=>x.status==='new').length);
+  setBadge('#badge-jobs',jobs.filter(x=>x.status==='published').length);
+}
+let toastTimer=null;
+function showLiveToast(message){
+  const el=$('#admin-live-toast');if(!el)return;
+  el.textContent=message;el.hidden=false;
+  requestAnimationFrame(()=>el.classList.add('show'));
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>{
+    el.classList.remove('show');
+    setTimeout(()=>{el.hidden=true},220);
+  },2600);
+}
+async function silentLiveRefresh(){
+  if(liveBusy||document.hidden||!session?.access_token)return;
+  liveBusy=true;
+  try{await Promise.all([loadEnquiries(),loadApplications(),loadJobs()])}catch{}
+  finally{liveBusy=false}
+}
+function startLiveUpdates(){
+  if(liveStarted)return;
+  liveStarted=true;
+  clearInterval(liveTimer);
+  liveTimer=setInterval(silentLiveRefresh,2000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)silentLiveRefresh()});
+}
 
 function renderOverview(){
   $('#stat-enquiries').textContent=enquiries.filter(x=>x.status==='new').length;
