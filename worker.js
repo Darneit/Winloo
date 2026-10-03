@@ -3,7 +3,8 @@ const SUPABASE_ORIGIN = 'https://kljfranzhcbicqlmdzci.supabase.co';
 function allowedPath(pathname) {
   return pathname.startsWith('/auth/v1/')
     || pathname.startsWith('/rest/v1/')
-    || pathname.startsWith('/storage/v1/');
+    || pathname.startsWith('/storage/v1/')
+    || pathname.startsWith('/functions/v1/');
 }
 
 export default {
