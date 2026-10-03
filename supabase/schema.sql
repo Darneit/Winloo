@@ -245,3 +245,29 @@ grant select, insert, update, delete on
   public.applications,
   public.application_files
 to authenticated, service_role;
+
+
+-- Soft-delete support for admin Trash.
+alter table public.enquiries add column if not exists deleted_at timestamptz;
+alter table public.applications add column if not exists deleted_at timestamptz;
+alter table public.jobs add column if not exists deleted_at timestamptz;
+
+create index if not exists idx_enquiries_deleted_at on public.enquiries(deleted_at);
+create index if not exists idx_applications_deleted_at on public.applications(deleted_at);
+create index if not exists idx_jobs_deleted_at on public.jobs(deleted_at);
+
+drop policy if exists "jobs select access" on public.jobs;
+create policy "jobs select access"
+on public.jobs for select to anon, authenticated
+using (
+  (
+    deleted_at is null
+    and status = 'published'
+    and (published_at is null or published_at <= now())
+    and (closing_date is null or closing_date >= current_date)
+  )
+  or (
+    (select auth.uid()) is not null
+    and exists (select 1 from public.admin_users a where a.user_id = (select auth.uid()))
+  )
+);
