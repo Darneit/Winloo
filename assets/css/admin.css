@@ -7,3 +7,19 @@
 .admin-live-toast{position:fixed;right:22px;bottom:22px;z-index:9999;background:#111719;color:#fff;padding:12px 15px;border:1px solid rgba(255,255,255,.12);box-shadow:0 12px 36px rgba(0,0,0,.18);font-size:.84rem;max-width:320px;opacity:0;transform:translateY(8px);transition:opacity .2s ease,transform .2s ease;pointer-events:none}
 .admin-live-toast.show{opacity:1;transform:translateY(0)}
 .admin-live-toast[hidden]{display:none!important}
+
+.admin-toolbar-wrap{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.admin-toolbar-wrap input{flex:1 1 260px;max-width:none}
+.admin-toolbar-wrap select,.admin-inline-controls select{min-height:42px;border:1px solid #d7dbd8;background:#fff;padding:9px 34px 9px 11px;font:inherit}
+.admin-toolbar-wrap .btn,.admin-toolbar-wrap .admin-mini-btn{min-height:42px;white-space:nowrap}
+.admin-inline-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.admin-dialog-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.admin-row-actions{flex-wrap:wrap}
+.admin-row-actions .admin-mini-btn{white-space:nowrap}
+.admin-job-actions{flex-wrap:wrap}
+.admin-nav-badge{margin-left:auto}
+@media(max-width:760px){
+  .admin-toolbar-wrap{display:grid;grid-template-columns:1fr}
+  .admin-toolbar-wrap input,.admin-toolbar-wrap select,.admin-toolbar-wrap button{width:100%;max-width:none}
+  .admin-inline-controls{width:100%;display:grid;grid-template-columns:1fr}
+}
