@@ -96,54 +96,81 @@ function setupCareerCustomDropdown(jobs){
 const jobsList=document.querySelector('[data-jobs-list]');
 if(jobsList){
   const notice=document.querySelector('[data-jobs-notice]');
-  fetch(`${SUPABASE_URL}/rest/v1/jobs?select=id,title,department,location,employment_type,experience,description,requirements,closing_date&status=eq.published&order=sort_order.asc,created_at.desc`,{headers:supabaseHeaders})
-    .then(r=>{if(!r.ok)throw new Error('Could not load vacancies');return r.json()})
-    .then(jobs=>{
-      setupCareerCustomDropdown(jobs);
+  let jobsFingerprint='';
+  let jobsSyncBusy=false;
 
-      if(!jobs.length){jobsList.innerHTML='';if(notice)notice.hidden=false;return}
-      if(notice)notice.hidden=true;
-      jobsList.innerHTML=jobs.map(job=>`<article class="job-card reveal is-visible">
-        <div class="job-card-top">
-          <div>
-            <div class="eyebrow">${esc(job.department||'Open Position')}</div>
-            <h3>${esc(job.title)}</h3>
-          </div>
-          <span class="tag">${esc(job.location||'Saudi Arabia')}</span>
+  const renderJobs=jobs=>{
+    setupCareerCustomDropdown(jobs);
+
+    if(!jobs.length){
+      jobsList.innerHTML='';
+      if(notice){
+        notice.hidden=false;
+        notice.textContent='There are currently no published vacancies. You may submit a general application.';
+      }
+      return;
+    }
+
+    if(notice)notice.hidden=true;
+    jobsList.innerHTML=jobs.map(job=>`<article class="job-card reveal is-visible">
+      <div class="job-card-top">
+        <div>
+          <div class="eyebrow">${esc(job.department||'Open Position')}</div>
+          <h3>${esc(job.title)}</h3>
         </div>
-        <div class="job-meta">
-          ${job.employment_type?`<span>${esc(job.employment_type)}</span>`:''}
-          ${job.experience?`<span>${esc(job.experience)}</span>`:''}
-          ${job.closing_date?`<span>Closes ${esc(job.closing_date)}</span>`:''}
-        </div>
-        <p>${esc(job.description)}</p>
-        ${Array.isArray(job.requirements)&&job.requirements.length?`<ul>${job.requirements.map(item=>`<li>${esc(item)}</li>`).join('')}</ul>`:''}
-        <button class="btn btn-dark arrow job-apply" type="button" data-job-id="${esc(job.id)}" data-job-title="${esc(job.title)}">Apply for this position</button>
-      </article>`).join('');
-      jobsList.querySelectorAll('.job-apply').forEach(btn=>btn.addEventListener('click',()=>{
-        const form=document.querySelector('form[data-email-form="career"]');
-        if(!form)return;
-        const jobId=form.querySelector('[name="job_id"]');
-        const position=form.querySelector('[name="position"]');
-        if(jobId)jobId.value=btn.dataset.jobId||'';
-        if(position){
-          const option=[...position.options].find(o=>o.dataset.jobId===btn.dataset.jobId);
-          if(option)position.value=option.value;
-          const dropdown=form.querySelector('[data-career-dropdown]');
-          if(dropdown?._setCareerValue)dropdown._setCareerValue(option?.value||btn.dataset.jobTitle||'',btn.dataset.jobId||'',option?.textContent||btn.dataset.jobTitle||'');
-        }
-        form.scrollIntoView({behavior:reduced?'auto':'smooth',block:'start'});
-        position?.focus({preventScroll:true});
-      }));
-    })
-    .catch(()=>{
-      if(notice){notice.hidden=false;notice.textContent='Vacancies could not be loaded right now. General applications are still welcome.'}
-      const careerForm=document.querySelector('form[data-email-form="career"]');
-      const positionSelect=careerForm?.querySelector('[name="position"]');
-      const jobIdInput=careerForm?.querySelector('[name="job_id"]');
-      if(positionSelect)positionSelect.innerHTML='<option value="General Application">General Application</option>';
-      if(jobIdInput)jobIdInput.value='';
-      setupCareerCustomDropdown([]);
+        <span class="tag">${esc(job.location||'Saudi Arabia')}</span>
+      </div>
+      <div class="job-meta">
+        ${job.employment_type?`<span>${esc(job.employment_type)}</span>`:''}
+        ${job.experience?`<span>${esc(job.experience)}</span>`:''}
+        ${job.closing_date?`<span>Closes ${esc(job.closing_date)}</span>`:''}
+      </div>
+      <p>${esc(job.description)}</p>
+      ${Array.isArray(job.requirements)&&job.requirements.length?`<ul>${job.requirements.map(item=>`<li>${esc(item)}</li>`).join('')}</ul>`:''}
+      <button class="btn btn-dark arrow job-apply" type="button" data-job-id="${esc(job.id)}" data-job-title="${esc(job.title)}">Apply for this position</button>
+    </article>`).join('');
+
+    jobsList.querySelectorAll('.job-apply').forEach(btn=>btn.onclick=()=>{
+      const form=document.querySelector('form[data-email-form="career"]');
+      if(!form)return;
+      const jobId=form.querySelector('[name="job_id"]');
+      const position=form.querySelector('[name="position"]');
+      const option=position?[...position.options].find(o=>o.dataset.jobId===btn.dataset.jobId):null;
+      if(jobId)jobId.value=btn.dataset.jobId||'';
+      if(position&&option)position.value=option.value;
+      const dropdown=form.querySelector('[data-career-dropdown]');
+      if(dropdown?._setCareerValue)dropdown._setCareerValue(option?.value||btn.dataset.jobTitle||'',btn.dataset.jobId||'',option?.textContent||btn.dataset.jobTitle||'');
+      form.scrollIntoView({behavior:reduced?'auto':'smooth',block:'start'});
     });
+  };
+
+  const syncJobs=async()=>{
+    if(jobsSyncBusy||document.hidden)return;
+    jobsSyncBusy=true;
+    try{
+      const r=await fetch(`${SUPABASE_URL}/rest/v1/jobs?select=id,title,department,location,employment_type,experience,description,requirements,closing_date&status=eq.published&order=sort_order.asc,created_at.desc`,{
+        headers:supabaseHeaders,
+        cache:'no-store'
+      });
+      if(!r.ok)throw new Error('Could not load vacancies');
+      const jobs=await r.json();
+      const nextFingerprint=JSON.stringify(jobs);
+      if(nextFingerprint!==jobsFingerprint){
+        jobsFingerprint=nextFingerprint;
+        renderJobs(jobs);
+      }
+    }catch{
+      if(!jobsFingerprint&&notice){
+        notice.hidden=false;
+        notice.textContent='Vacancies could not be loaded right now. General applications are still welcome.';
+      }
+    }finally{
+      jobsSyncBusy=false;
+    }
+  };
+
+  syncJobs();
+  setInterval(syncJobs,2000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncJobs()});
 }
 })();
