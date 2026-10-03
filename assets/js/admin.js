@@ -1,4 +1,4 @@
-const SUPABASE_URL='https://kljfranzhcbicqlmdzci.supabase.co';
+const SUPABASE_URL='/api/supabase';
 const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsamZyYW56aGNiaWNxbG1kemNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEwMTI5MjksImV4cCI6MjEwNjU4ODkyOX0.Q-4RG7m8QelzCQdryNV0eYokD2pwoXv17t2U6Cl43H0';
 const SESSION_KEY='winloo_admin_session';
 const $=s=>document.querySelector(s);
