@@ -11,6 +11,46 @@ document.querySelectorAll('input[type="file"]').forEach(input=>{const field=inpu
 const SUPABASE_URL='/api/supabase';
 const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsamZyYW56aGNiaWNxbG1kemNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEwMTI5MjksImV4cCI6MjEwNjU4ODkyOX0.Q-4RG7m8QelzCQdryNV0eYokD2pwoXv17t2U6Cl43H0';
 const supabaseHeaders={apikey:SUPABASE_ANON_KEY,Authorization:`Bearer ${SUPABASE_ANON_KEY}`};
+const TURNSTILE_SITE_KEY='0x4AAAAAAFMuHACWFviM6CaK';
+let turnstileScriptPromise=null;
+function loadTurnstile(){
+  if(window.turnstile)return Promise.resolve(window.turnstile);
+  if(turnstileScriptPromise)return turnstileScriptPromise;
+  turnstileScriptPromise=new Promise((resolve,reject)=>{
+    const script=document.createElement('script');
+    script.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+    script.async=true;script.defer=true;
+    script.onload=()=>resolve(window.turnstile);
+    script.onerror=()=>reject(new Error('Verification could not load. Please try again.'));
+    document.head.appendChild(script);
+  });
+  return turnstileScriptPromise;
+}
+async function getTurnstileToken(form){
+  const api=await loadTurnstile();
+  let host=form.querySelector('.turnstile-host');
+  if(!host){
+    host=document.createElement('div');
+    host.className='turnstile-host';
+    host.hidden=true;
+    form.appendChild(host);
+  }
+  if(host.dataset.widgetId){
+    try{api.remove(host.dataset.widgetId)}catch{}
+    host.innerHTML='';
+  }
+  return new Promise((resolve,reject)=>{
+    const id=api.render(host,{
+      sitekey:TURNSTILE_SITE_KEY,
+      size:'invisible',
+      callback:token=>resolve({token,id}),
+      'error-callback':()=>reject(new Error('Verification failed. Please try again.')),
+      'expired-callback':()=>reject(new Error('Verification expired. Please try again.'))
+    });
+    host.dataset.widgetId=id;
+    api.execute(id);
+  });
+}
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 
 document.querySelectorAll('form[data-email-form]').forEach(form=>form.addEventListener('submit',async e=>{
@@ -25,7 +65,12 @@ document.querySelectorAll('form[data-email-form]').forEach(form=>form.addEventLi
   if(button){button.disabled=true;button.textContent=kind==='career'?'Submitting Application…':'Submitting Enquiry…'}
   if(status){status.textContent='';status.classList.remove('success','error')}
   try{
-    const response=await fetch(`${SUPABASE_URL}/functions/v1/${endpoint}`,{method:'POST',headers:supabaseHeaders,body:new FormData(form)});
+    const verification=await getTurnstileToken(form);
+    const response=await fetch(`${SUPABASE_URL}/functions/v1/${endpoint}`,{
+      method:'POST',
+      headers:{...supabaseHeaders,'X-Turnstile-Token':verification.token},
+      body:new FormData(form)
+    });
     const result=await response.json().catch(()=>({}));
     if(!response.ok)throw new Error(result.error||'Submission failed. Please try again.');
     form.reset();
