@@ -49,6 +49,25 @@ if(jobsList){
   fetch(`${SUPABASE_URL}/rest/v1/jobs?select=id,title,department,location,employment_type,experience,description,requirements,closing_date&status=eq.published&order=sort_order.asc,created_at.desc`,{headers:supabaseHeaders})
     .then(r=>{if(!r.ok)throw new Error('Could not load vacancies');return r.json()})
     .then(jobs=>{
+      const careerForm=document.querySelector('form[data-email-form="career"]');
+      const positionSelect=careerForm?.querySelector('[name="position"]');
+      const jobIdInput=careerForm?.querySelector('[name="job_id"]');
+
+      if(positionSelect){
+        const currentValue=positionSelect.value;
+        if(jobs.length){
+          positionSelect.innerHTML='<option value="">Select an open position</option>'+jobs.map(job=>`<option value="${esc(job.title)}" data-job-id="${esc(job.id)}">${esc(job.title)}${job.location?' — '+esc(job.location):''}</option>`).join('');
+        }else{
+          positionSelect.innerHTML='<option value="General Application">General Application</option>';
+          if(jobIdInput)jobIdInput.value='';
+        }
+        if(currentValue&&[...positionSelect.options].some(o=>o.value===currentValue))positionSelect.value=currentValue;
+        positionSelect.onchange=()=>{
+          const selected=positionSelect.selectedOptions[0];
+          if(jobIdInput)jobIdInput.value=selected?.dataset?.jobId||'';
+        };
+      }
+
       if(!jobs.length){jobsList.innerHTML='';if(notice)notice.hidden=false;return}
       if(notice)notice.hidden=true;
       jobsList.innerHTML=jobs.map(job=>`<article class="job-card reveal is-visible">
@@ -74,11 +93,24 @@ if(jobsList){
         const jobId=form.querySelector('[name="job_id"]');
         const position=form.querySelector('[name="position"]');
         if(jobId)jobId.value=btn.dataset.jobId||'';
-        if(position)position.value=btn.dataset.jobTitle||'';
+        if(position){
+          position.value=btn.dataset.jobTitle||'';
+          if(position.value!==btn.dataset.jobTitle){
+            const option=[...position.options].find(o=>o.dataset.jobId===btn.dataset.jobId);
+            if(option)position.value=option.value;
+          }
+        }
         form.scrollIntoView({behavior:reduced?'auto':'smooth',block:'start'});
         position?.focus({preventScroll:true});
       }));
     })
-    .catch(()=>{if(notice){notice.hidden=false;notice.textContent='Vacancies could not be loaded right now. General applications are still welcome.'}});
+    .catch(()=>{
+      if(notice){notice.hidden=false;notice.textContent='Vacancies could not be loaded right now. General applications are still welcome.'}
+      const careerForm=document.querySelector('form[data-email-form="career"]');
+      const positionSelect=careerForm?.querySelector('[name="position"]');
+      const jobIdInput=careerForm?.querySelector('[name="job_id"]');
+      if(positionSelect)positionSelect.innerHTML='<option value="General Application">General Application</option>';
+      if(jobIdInput)jobIdInput.value='';
+    });
 }
 })();
