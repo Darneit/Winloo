@@ -19,8 +19,30 @@ const SEEN_APPLICATIONS_KEY='winloo_seen_applications';
 function authHeaders(extra={}){
   return {apikey:SUPABASE_ANON_KEY,Authorization:`Bearer ${session?.access_token||SUPABASE_ANON_KEY}`,...extra};
 }
-async function api(path,{method='GET',body,headers={}}={}){
-  const res=await fetch(SUPABASE_URL+path,{method,headers:authHeaders(body?{'Content-Type':'application/json'}:{}),body:body?JSON.stringify(body):undefined});
+async function refreshSession(){
+  if(!session?.refresh_token)throw new Error('Session expired. Please sign in again.');
+  const res=await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`,{
+    method:'POST',
+    headers:{apikey:SUPABASE_ANON_KEY,'Content-Type':'application/json'},
+    body:JSON.stringify({refresh_token:session.refresh_token})
+  });
+  const data=await res.json().catch(()=>({}));
+  if(!res.ok)throw new Error(data?.msg||data?.error_description||data?.message||'Session refresh failed');
+  saveSession(data);
+  return data;
+}
+async function api(path,{method='GET',body,headers={},retry=true}={}){
+  let res=await fetch(SUPABASE_URL+path,{method,headers:authHeaders({...headers,...(body?{'Content-Type':'application/json'}:{})}),body:body?JSON.stringify(body):undefined});
+  if(res.status===401&&retry&&session?.refresh_token){
+    try{
+      await refreshSession();
+      res=await fetch(SUPABASE_URL+path,{method,headers:authHeaders({...headers,...(body?{'Content-Type':'application/json'}:{})}),body:body?JSON.stringify(body):undefined});
+    }catch{
+      saveSession(null);
+      showLogin();
+      throw new Error('Session expired. Please sign in again.');
+    }
+  }
   const text=await res.text();
   let data=null;try{data=text?JSON.parse(text):null}catch{data=text}
   if(!res.ok)throw new Error(data?.message||data?.error_description||data?.error||`Request failed (${res.status})`);
@@ -60,7 +82,12 @@ function showAdmin(){
 }
 async function boot(){
   loadSession();
-  if(session?.access_token && await isAdmin())return enterAdmin();
+  if(session?.access_token){
+    if(session.expires_at && Date.now() >= (session.expires_at*1000)-30000){
+      try{await refreshSession()}catch{saveSession(null)}
+    }
+    if(session?.access_token && await isAdmin())return enterAdmin();
+  }
   saveSession(null);
   showLogin();
 }
