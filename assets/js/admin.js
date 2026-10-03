@@ -13,6 +13,8 @@ let initialLiveSnapshot=true;
 let enquiryFingerprint='';
 let applicationFingerprint='';
 let jobsFingerprint='';
+const SEEN_ENQUIRIES_KEY='winloo_seen_enquiries';
+const SEEN_APPLICATIONS_KEY='winloo_seen_applications';
 
 function authHeaders(extra={}){
   return {apikey:SUPABASE_ANON_KEY,Authorization:`Bearer ${session?.access_token||SUPABASE_ANON_KEY}`,...extra};
@@ -92,7 +94,9 @@ $('#admin-logout').addEventListener('click',async()=>{await signOut();location.r
 $$('.admin-nav').forEach(btn=>btn.addEventListener('click',()=>{
   $$('.admin-nav').forEach(x=>x.classList.remove('active'));btn.classList.add('active');
   const p=btn.dataset.panel;$$('[data-panel-view]').forEach(v=>v.hidden=v.dataset.panelView!==p);
-  $('#panel-title').textContent=btn.textContent.trim();
+  $('#panel-title').textContent=btn.querySelector('span')?.textContent?.trim()||btn.textContent.trim();
+  if(p==='enquiries')markAllSeen('enquiries');
+  if(p==='applications')markAllSeen('applications');
 }));
 
 async function refreshAll(){
@@ -128,14 +132,37 @@ async function loadJobs(force=false){
     jobs=next;jobsFingerprint=fp;renderJobs();renderOverview();updateNavBadges();
   }
 }
+function getSeenIds(key){
+  try{return new Set(JSON.parse(localStorage.getItem(key)||'[]'))}catch{return new Set()}
+}
+function saveSeenIds(key,set){
+  localStorage.setItem(key,JSON.stringify(Array.from(set).slice(-500)));
+}
+function markAllSeen(type){
+  if(type==='enquiries'){
+    const seen=getSeenIds(SEEN_ENQUIRIES_KEY);
+    enquiries.forEach(x=>seen.add(x.id));
+    saveSeenIds(SEEN_ENQUIRIES_KEY,seen);
+  }
+  if(type==='applications'){
+    const seen=getSeenIds(SEEN_APPLICATIONS_KEY);
+    applications.forEach(x=>seen.add(x.id));
+    saveSeenIds(SEEN_APPLICATIONS_KEY,seen);
+  }
+  updateNavBadges();
+}
+function unseenCount(items,key){
+  const seen=getSeenIds(key);
+  return items.filter(x=>!seen.has(x.id)).length;
+}
 function setBadge(id,count){
   const el=$(id);if(!el)return;
   el.textContent=String(count);
   el.hidden=count<1;
 }
 function updateNavBadges(){
-  setBadge('#badge-enquiries',enquiries.filter(x=>x.status==='new').length);
-  setBadge('#badge-applications',applications.filter(x=>x.status==='new').length);
+  setBadge('#badge-enquiries',unseenCount(enquiries,SEEN_ENQUIRIES_KEY));
+  setBadge('#badge-applications',unseenCount(applications,SEEN_APPLICATIONS_KEY));
   setBadge('#badge-jobs',jobs.filter(x=>x.status==='published').length);
 }
 let toastTimer=null;
