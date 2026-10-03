@@ -1,0 +1,7 @@
+worker.js
+wrangler.toml
+.assetsignore
+supabase/
+.git/
+.github/
+*.md
