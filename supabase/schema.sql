@@ -271,3 +271,89 @@ using (
     and exists (select 1 from public.admin_users a where a.user_id = (select auth.uid()))
   )
 );
+
+
+-- Admin audit history.
+create table if not exists public.audit_logs (
+  id uuid primary key default gen_random_uuid(),
+  actor_user_id uuid null references auth.users(id) on delete set null,
+  entity_type text not null check (entity_type in ('enquiry','application','job')),
+  entity_id uuid not null,
+  action text not null,
+  details jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_audit_logs_created_at on public.audit_logs(created_at desc);
+create index if not exists idx_audit_logs_entity on public.audit_logs(entity_type, entity_id);
+
+alter table public.audit_logs enable row level security;
+grant select, insert on public.audit_logs to authenticated, service_role;
+
+drop policy if exists "admins can read audit logs" on public.audit_logs;
+create policy "admins can read audit logs"
+on public.audit_logs for select to authenticated
+using (exists (select 1 from public.admin_users a where a.user_id = (select auth.uid())));
+
+drop policy if exists "admins can write audit logs" on public.audit_logs;
+create policy "admins can write audit logs"
+on public.audit_logs for insert to authenticated
+with check (exists (select 1 from public.admin_users a where a.user_id = (select auth.uid())));
+
+create or replace function public.log_admin_audit()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+declare
+  v_type text;
+  v_id uuid;
+  v_action text;
+  v_details jsonb := '{}'::jsonb;
+begin
+  v_type := case TG_TABLE_NAME
+    when 'enquiries' then 'enquiry'
+    when 'applications' then 'application'
+    when 'jobs' then 'job'
+  end;
+
+  if TG_OP = 'INSERT' then
+    v_id := NEW.id;
+    v_action := 'created';
+    v_details := jsonb_build_object('status', NEW.status);
+  elsif TG_OP = 'DELETE' then
+    v_id := OLD.id;
+    v_action := 'deleted_forever';
+    v_details := jsonb_build_object('status', OLD.status);
+  else
+    v_id := NEW.id;
+    if OLD.deleted_at is null and NEW.deleted_at is not null then
+      v_action := 'moved_to_trash';
+    elsif OLD.deleted_at is not null and NEW.deleted_at is null then
+      v_action := 'restored';
+    elsif OLD.status is distinct from NEW.status then
+      v_action := 'status_changed';
+      v_details := jsonb_build_object('from', OLD.status, 'to', NEW.status);
+    else
+      v_action := 'updated';
+    end if;
+  end if;
+
+  insert into public.audit_logs(actor_user_id, entity_type, entity_id, action, details)
+  values ((select auth.uid()), v_type, v_id, v_action, v_details);
+
+  return coalesce(NEW, OLD);
+end;
+$$;
+
+drop trigger if exists trg_audit_enquiries on public.enquiries;
+create trigger trg_audit_enquiries after insert or update or delete on public.enquiries
+for each row execute function public.log_admin_audit();
+
+drop trigger if exists trg_audit_applications on public.applications;
+create trigger trg_audit_applications after insert or update or delete on public.applications
+for each row execute function public.log_admin_audit();
+
+drop trigger if exists trg_audit_jobs on public.jobs;
+create trigger trg_audit_jobs after insert or update or delete on public.jobs
+for each row execute function public.log_admin_audit();
