@@ -55,22 +55,22 @@ function setupCareerCustomDropdown(jobs){
 
   const current=native.value;
   const options=jobs.length
-    ? jobs.map(job=>({value:job.title,label:job.title+(job.location?' — '+job.location:''),id:job.id}))
-    : [{value:'General Application',label:'General Application',id:''}];
+    ? jobs.map(job=>({value:job.title,shortLabel:job.title,label:job.title+(job.location?' — '+job.location:''),id:job.id}))
+    : [{value:'General Application',shortLabel:'General Application',label:'General Application',id:''}];
 
   native.innerHTML=(jobs.length?'<option value="">Select an open position</option>':'')+options.map(o=>`<option value="${esc(o.value)}" data-job-id="${esc(o.id)}">${esc(o.label)}</option>`).join('');
-  menu.innerHTML=options.map(o=>`<button type="button" class="career-dropdown-option" role="option" data-value="${esc(o.value)}" data-job-id="${esc(o.id)}">${esc(o.label)}</button>`).join('');
+  menu.innerHTML=options.map(o=>`<button type="button" class="career-dropdown-option" role="option" data-value="${esc(o.value)}" data-job-id="${esc(o.id)}" data-short-label="${esc(o.shortLabel)}">${esc(o.label)}</button>`).join('');
 
-  const setValue=(value,id='',label='')=>{
+  const setValue=(value,id='',shortLabel='')=>{
     native.value=value;
     if(jobId)jobId.value=id||'';
-    text.textContent=label||native.selectedOptions[0]?.textContent||'Select an open position';
+    text.textContent=shortLabel||value||'Select an open position';
     trigger.classList.toggle('placeholder',!value);
     menu.querySelectorAll('.career-dropdown-option').forEach(opt=>opt.classList.toggle('selected',opt.dataset.value===value));
   };
 
   if(current&&options.some(o=>o.value===current)){
-    const o=options.find(o=>o.value===current);setValue(o.value,o.id,o.label);
+    const o=options.find(o=>o.value===current);setValue(o.value,o.id,o.shortLabel);
   }else if(!jobs.length){
     setValue('General Application','','General Application');
   }else{
@@ -83,7 +83,7 @@ function setupCareerCustomDropdown(jobs){
     trigger.setAttribute('aria-expanded',String(open));
   };
   menu.querySelectorAll('.career-dropdown-option').forEach(opt=>opt.onclick=()=>{
-    setValue(opt.dataset.value||'',opt.dataset.jobId||'',opt.textContent||'');
+    setValue(opt.dataset.value||'',opt.dataset.jobId||'',opt.dataset.shortLabel||opt.dataset.value||'');
     menu.hidden=true;trigger.setAttribute('aria-expanded','false');
   });
   document.addEventListener('click',e=>{
@@ -139,7 +139,7 @@ if(jobsList){
       if(jobId)jobId.value=btn.dataset.jobId||'';
       if(position&&option)position.value=option.value;
       const dropdown=form.querySelector('[data-career-dropdown]');
-      if(dropdown?._setCareerValue)dropdown._setCareerValue(option?.value||btn.dataset.jobTitle||'',btn.dataset.jobId||'',option?.textContent||btn.dataset.jobTitle||'');
+      if(dropdown?._setCareerValue)dropdown._setCareerValue(option?.value||btn.dataset.jobTitle||'',btn.dataset.jobId||'',btn.dataset.jobTitle||option?.value||'');
       form.scrollIntoView({behavior:reduced?'auto':'smooth',block:'start'});
     });
   };
