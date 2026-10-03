@@ -47,3 +47,24 @@
 @media(max-width:1050px){.home .qhse,.home .presence{min-height:auto}.home .qhse-media,.home .presence-media,.home .qhse-media img,.home .presence-media img{min-height:470px}.home .qhse-copy,.home .presence-copy{padding:56px 7vw}.project-brand{width:142px;height:64px}.project-brand.logo-wide,.project-brand.logo-aramco,.project-brand.logo-sinohydro,.project-brand.logo-alsharif,.project-brand.logo-lt{width:150px}}
 @media(max-width:720px){.home .home-resources,.home .home-industries{padding:70px 0}.home .clients-section{padding:54px 0}.home .qhse-media,.home .presence-media,.home .qhse-media img,.home .presence-media img{min-height:340px}.home .qhse-copy,.home .presence-copy{padding:50px 25px}.home .cta .wrap{padding-top:54px;padding-bottom:54px}.client-logo{width:170px;height:86px}.client-track,.client-set{gap:34px}.project-brand{width:128px;height:60px;padding:8px 10px}.project-brand.logo-wide,.project-brand.logo-aramco,.project-brand.logo-sinohydro,.project-brand.logo-alsharif,.project-brand.logo-lt{width:136px}.project-brand img{max-height:42px}.profile-download{width:220px}}
 @media(prefers-reduced-motion:reduce){.client-marquee{overflow-x:auto;-webkit-mask-image:none;mask-image:none}.client-track{transform:none!important}}
+
+/* Client marquee logo balance */
+.client-track{gap:58px;padding:10px 0 16px}
+.client-set{gap:58px}
+.client-logo{width:190px;height:96px;padding:8px 12px;background:transparent;border:0}
+.client-logo img{display:block;width:auto;height:auto;max-width:176px;max-height:64px;object-fit:contain;pointer-events:none;opacity:1;filter:none;image-rendering:auto}
+.logo-gas img{max-width:170px;max-height:72px;border-radius:2px}
+.logo-satorp img{max-width:178px;max-height:68px}
+.logo-hyundai img{max-width:178px;max-height:52px}
+.logo-ctci img{max-width:170px;max-height:60px}
+.logo-spark img{max-width:168px;max-height:68px}
+.logo-jgc img{max-width:150px;max-height:68px}
+.logo-neom img{max-width:180px;max-height:64px}
+@media(max-width:720px){
+  .client-track,.client-set{gap:34px}
+  .client-logo{width:160px;height:78px;padding:6px 8px}
+  .client-logo img{max-width:142px;max-height:52px}
+  .logo-gas img{max-width:142px;max-height:58px}
+  .logo-hyundai img{max-height:44px}
+  .logo-jgc img{max-width:126px}
+}
