@@ -1,4 +1,5 @@
 const SUPABASE_ORIGIN = 'https://kljfranzhcbicqlmdzci.supabase.co';
+const TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 
 function allowedPath(pathname) {
   return pathname.startsWith('/auth/v1/')
@@ -22,6 +23,45 @@ export default {
         status: 404,
         headers: { 'Content-Type': 'application/json' },
       });
+    }
+
+    const protectedSubmission = request.method === 'POST' && (
+      upstreamPath === '/functions/v1/submit-enquiry' ||
+      upstreamPath === '/functions/v1/submit-application'
+    );
+
+    if (protectedSubmission) {
+      const token = request.headers.get('x-turnstile-token');
+      if (!token) {
+        return new Response(JSON.stringify({ error: 'verification_required' }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      const verificationBody = new FormData();
+      verificationBody.set('secret', env.TURNSTILE_SECRET);
+      verificationBody.set('response', token);
+      const ip = request.headers.get('CF-Connecting-IP');
+      if (ip) verificationBody.set('remoteip', ip);
+
+      let verification;
+      try {
+        verification = await fetch(TURNSTILE_VERIFY_URL, { method: 'POST', body: verificationBody });
+      } catch {
+        return new Response(JSON.stringify({ error: 'verification_unavailable' }), {
+          status: 503,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      const result = await verification.json().catch(() => ({}));
+      if (!result.success) {
+        return new Response(JSON.stringify({ error: 'verification_failed' }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
     }
 
     const target = new URL(SUPABASE_ORIGIN + upstreamPath);
