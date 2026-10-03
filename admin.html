@@ -66,10 +66,13 @@
             <select id="enquiry-sort" aria-label="Sort enquiries">
               <option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="name">Contact A–Z</option><option value="status">Status</option>
             </select>
-            <button class="admin-mini-btn" id="download-enquiries-pdf" type="button">Download PDF</button>
+            <button class="admin-mini-btn" id="download-enquiries-pdf" type="button">PDF</button>
+            <button class="admin-mini-btn" id="download-enquiries-csv" type="button">CSV</button>
+            <button class="admin-mini-btn" id="pdf-selected-enquiries" type="button">Selected PDF</button>
+            <button class="admin-mini-btn danger" id="trash-selected-enquiries" type="button">Trash selected</button>
             <button class="btn btn-dark" id="refresh-enquiries" type="button">Refresh</button>
           </div>
-          <div class="admin-table-wrap"><table><thead><tr><th>Date</th><th>Contact</th><th>Company</th><th>Project</th><th>Service</th><th>Status</th><th></th></tr></thead><tbody id="enquiries-body"></tbody></table></div>
+          <div class="admin-table-wrap"><table><thead><tr><th><input type="checkbox" id="select-all-enquiries" aria-label="Select all enquiries"></th><th>Date</th><th>Contact</th><th>Company</th><th>Project</th><th>Service</th><th>Status</th><th></th></tr></thead><tbody id="enquiries-body"></tbody></table></div>
         </section>
 
         <section class="admin-panel" data-panel-view="applications" hidden>
@@ -81,10 +84,13 @@
             <select id="application-sort" aria-label="Sort applications">
               <option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="name">Applicant A–Z</option><option value="status">Status</option>
             </select>
-            <button class="admin-mini-btn" id="download-applications-pdf" type="button">Download PDF</button>
+            <button class="admin-mini-btn" id="download-applications-pdf" type="button">PDF</button>
+            <button class="admin-mini-btn" id="download-applications-csv" type="button">CSV</button>
+            <button class="admin-mini-btn" id="pdf-selected-applications" type="button">Selected PDF</button>
+            <button class="admin-mini-btn danger" id="trash-selected-applications" type="button">Trash selected</button>
             <button class="btn btn-dark" id="refresh-applications" type="button">Refresh</button>
           </div>
-          <div class="admin-table-wrap"><table><thead><tr><th>Date</th><th>Applicant</th><th>Position</th><th>Location</th><th>Experience</th><th>Status</th><th></th></tr></thead><tbody id="applications-body"></tbody></table></div>
+          <div class="admin-table-wrap"><table><thead><tr><th><input type="checkbox" id="select-all-applications" aria-label="Select all applications"></th><th>Date</th><th>Applicant</th><th>Position</th><th>Location</th><th>Experience</th><th>Status</th><th></th></tr></thead><tbody id="applications-body"></tbody></table></div>
         </section>
 
         <section class="admin-panel" data-panel-view="jobs" hidden>
@@ -117,7 +123,10 @@
                   <select id="job-sort" aria-label="Sort vacancies">
                     <option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="title">Title A–Z</option><option value="status">Status</option>
                   </select>
-                  <button class="admin-mini-btn" id="download-jobs-pdf" type="button">Download PDF</button>
+                  <button class="admin-mini-btn" id="download-jobs-pdf" type="button">PDF</button>
+                  <button class="admin-mini-btn" id="download-jobs-csv" type="button">CSV</button>
+                  <button class="admin-mini-btn" id="pdf-selected-jobs" type="button">Selected PDF</button>
+                  <button class="admin-mini-btn danger" id="trash-selected-jobs" type="button">Trash selected</button>
                 </div>
               </div>
               <div id="jobs-admin-list" class="admin-job-list"></div>
@@ -134,11 +143,15 @@
             <select id="trash-sort" aria-label="Sort trash">
               <option value="newest">Recently deleted</option><option value="oldest">Oldest deleted</option><option value="name">Name A–Z</option>
             </select>
-            <button class="admin-mini-btn" id="download-trash-pdf" type="button">Download PDF</button>
+            <button class="admin-mini-btn" id="download-trash-pdf" type="button">PDF</button>
+            <button class="admin-mini-btn" id="download-trash-csv" type="button">CSV</button>
+            <button class="admin-mini-btn" id="pdf-selected-trash" type="button">Selected PDF</button>
+            <button class="admin-mini-btn" id="restore-selected-trash" type="button">Restore selected</button>
+            <button class="admin-mini-btn danger" id="delete-selected-trash" type="button">Delete selected</button>
           </div>
           <div class="admin-table-wrap">
             <table>
-              <thead><tr><th>Deleted</th><th>Type</th><th>Name / Title</th><th>Original date</th><th></th></tr></thead>
+              <thead><tr><th><input type="checkbox" id="select-all-trash" aria-label="Select all trash"></th><th>Deleted</th><th>Type</th><th>Name / Title</th><th>Original date</th><th></th></tr></thead>
               <tbody id="trash-body"></tbody>
             </table>
           </div>
