@@ -172,5 +172,7 @@ if(jobsList){
   syncJobs();
   setInterval(syncJobs,2000);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncJobs()});
+  window.addEventListener('focus',syncJobs);
+  window.addEventListener('pageshow',syncJobs);
 }
 })();
