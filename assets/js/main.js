@@ -7,5 +7,78 @@ const marquee=document.querySelector('.client-marquee');const track=marquee?.que
 document.querySelectorAll('.project-brand img').forEach(img=>{img.addEventListener('error',()=>img.closest('.project-brand')?.remove(),{once:true})});
 // File input feedback without changing the email-based submission flow.
 document.querySelectorAll('input[type="file"]').forEach(input=>{const field=input.closest('.field');if(!field)return;const status=document.createElement('div');status.className='file-selection';status.setAttribute('aria-live','polite');field.appendChild(status);input.addEventListener('change',()=>{const names=[...input.files].map(f=>f.name);status.textContent=names.length?(names.length===1?`Selected: ${names[0]}`:`${names.length} files selected`):''})});
-// Mailto fallback for static hosting forms. Keeps form structure ready for a future backend.
-document.querySelectorAll('form[data-email-form]').forEach(form=>form.addEventListener('submit',e=>{e.preventDefault();if(!form.checkValidity())return form.reportValidity();const data=new FormData(form);const kind=form.dataset.emailForm;const subject=kind==='career'?`General Application — ${data.get('position')||'Winloo Careers'}`:`Project Enquiry — ${data.get('project_name')||data.get('company')||'Winloo'}`;const lines=[];for(const [k,v] of data.entries()){if(v instanceof File){if(v.name)lines.push(`${k}: ${v.name} (attach this file to the email draft)`)}else if(String(v).trim())lines.push(`${k.replaceAll('_',' ')}: ${v}`)}lines.push('');lines.push('Please attach any RFQ, BOQ, drawings or CV files before sending.');location.href=`mailto:info@winloogroup.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lines.join('\n'))}`;}));})();
+// Supabase backend integration.
+const SUPABASE_URL='https://kljfranzhcbicqlmdzci.supabase.co';
+const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsamZyYW56aGNiaWNxbG1kemNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEwMTI5MjksImV4cCI6MjEwNjU4ODkyOX0.Q-4RG7m8QelzCQdryNV0eYokD2pwoXv17t2U6Cl43H0';
+const supabaseHeaders={apikey:SUPABASE_ANON_KEY,Authorization:`Bearer ${SUPABASE_ANON_KEY}`};
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+
+document.querySelectorAll('form[data-email-form]').forEach(form=>form.addEventListener('submit',async e=>{
+  e.preventDefault();
+  if(!form.checkValidity())return form.reportValidity();
+  const kind=form.dataset.emailForm;
+  const endpoint=kind==='career'?'submit-application':'submit-enquiry';
+  const button=form.querySelector('button[type="submit"]');
+  let status=form.querySelector('.form-submit-status');
+  if(!status){status=document.createElement('div');status.className='form-submit-status';status.setAttribute('aria-live','polite');button?.closest('.field')?.appendChild(status)}
+  const oldText=button?.textContent;
+  if(button){button.disabled=true;button.textContent=kind==='career'?'Submitting Application…':'Submitting Enquiry…'}
+  if(status){status.textContent='';status.classList.remove('success','error')}
+  try{
+    const response=await fetch(`${SUPABASE_URL}/functions/v1/${endpoint}`,{method:'POST',headers:supabaseHeaders,body:new FormData(form)});
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(result.error||'Submission failed. Please try again.');
+    if(status){status.textContent=kind==='career'?'Application submitted successfully. Thank you for applying.':'Project enquiry submitted successfully. Our team will review it.';status.classList.add('success')}
+    form.reset();
+    form.querySelectorAll('.file-selection').forEach(el=>el.textContent='');
+    if(kind==='career'){
+      const jobId=form.querySelector('[name="job_id"]');
+      if(jobId)jobId.value='';
+    }
+  }catch(err){
+    if(status){status.textContent=err?.message||'Something went wrong. Please try again.';status.classList.add('error')}
+  }finally{
+    if(button){button.disabled=false;button.textContent=oldText||'Submit'}
+  }
+}));
+
+// Public careers feed. RLS only exposes currently published vacancies.
+const jobsList=document.querySelector('[data-jobs-list]');
+if(jobsList){
+  const notice=document.querySelector('[data-jobs-notice]');
+  fetch(`${SUPABASE_URL}/rest/v1/jobs?select=id,title,department,location,employment_type,experience,description,requirements,closing_date&status=eq.published&order=sort_order.asc,created_at.desc`,{headers:supabaseHeaders})
+    .then(r=>{if(!r.ok)throw new Error('Could not load vacancies');return r.json()})
+    .then(jobs=>{
+      if(!jobs.length){jobsList.innerHTML='';if(notice)notice.hidden=false;return}
+      if(notice)notice.hidden=true;
+      jobsList.innerHTML=jobs.map(job=>`<article class="job-card reveal is-visible">
+        <div class="job-card-top">
+          <div>
+            <div class="eyebrow">${esc(job.department||'Open Position')}</div>
+            <h3>${esc(job.title)}</h3>
+          </div>
+          <span class="tag">${esc(job.location||'Saudi Arabia')}</span>
+        </div>
+        <div class="job-meta">
+          ${job.employment_type?`<span>${esc(job.employment_type)}</span>`:''}
+          ${job.experience?`<span>${esc(job.experience)}</span>`:''}
+          ${job.closing_date?`<span>Closes ${esc(job.closing_date)}</span>`:''}
+        </div>
+        <p>${esc(job.description)}</p>
+        ${Array.isArray(job.requirements)&&job.requirements.length?`<ul>${job.requirements.map(item=>`<li>${esc(item)}</li>`).join('')}</ul>`:''}
+        <button class="btn btn-dark arrow job-apply" type="button" data-job-id="${esc(job.id)}" data-job-title="${esc(job.title)}">Apply for this position</button>
+      </article>`).join('');
+      jobsList.querySelectorAll('.job-apply').forEach(btn=>btn.addEventListener('click',()=>{
+        const form=document.querySelector('form[data-email-form="career"]');
+        if(!form)return;
+        const jobId=form.querySelector('[name="job_id"]');
+        const position=form.querySelector('[name="position"]');
+        if(jobId)jobId.value=btn.dataset.jobId||'';
+        if(position)position.value=btn.dataset.jobTitle||'';
+        form.scrollIntoView({behavior:reduced?'auto':'smooth',block:'start'});
+        position?.focus({preventScroll:true});
+      }));
+    })
+    .catch(()=>{if(notice){notice.hidden=false;notice.textContent='Vacancies could not be loaded right now. General applications are still welcome.'}});
+}
+})();
