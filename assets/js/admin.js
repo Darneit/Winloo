@@ -489,21 +489,43 @@ function wrapLine(s,max=92){
 }
 function makePdf(lines,filename){
   const normalized=[];
-  for(const line of lines)normalized.push(...wrapLine(line));
-  const pages=[];for(let i=0;i<normalized.length;i+=48)pages.push(normalized.slice(i,i+48));
+  for(const line of lines)normalized.push(...wrapLine(line,86));
+  const pages=[];for(let i=0;i<normalized.length;i+=42)pages.push(normalized.slice(i,i+42));
   if(!pages.length)pages.push(['No records.']);
-  const fontObj=3;
+
   const objects={};
   objects[1]='<< /Type /Catalog /Pages 2 0 R >>';
-  const kids=pages.map((_,i)=>`${4+i*2} 0 R`).join(' ');
-  objects[2]=`<< /Type /Pages /Kids [${kids}] /Count ${pages.length} >>`;
   objects[3]='<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>';
+  objects[4]='<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>';
+  const firstPageObj=5;
+  const kids=pages.map((_,i)=>`${firstPageObj+i*2} 0 R`).join(' ');
+  objects[2]=`<< /Type /Pages /Kids [${kids}] /Count ${pages.length} >>`;
+
   pages.forEach((page,i)=>{
-    const pageObj=4+i*2,contentObj=5+i*2;
-    const stream=['BT','/F1 10 Tf','50 790 Td','14 TL',...page.map(line=>`(${pdfEscape(line)}) Tj T*`),'ET'].join('\n');
-    objects[pageObj]=`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 842] /Resources << /Font << /F1 ${fontObj} 0 R >> >> /Contents ${contentObj} 0 R >>`;
+    const pageObj=firstPageObj+i*2,contentObj=pageObj+1;
+    const content=[];
+    content.push('BT','/F2 15 Tf','50 794 Td','(WINLOO CONTRACTING COMPANY LLP) Tj','ET');
+    content.push('0.75 w','50 780 m','562 780 l','S');
+    content.push('BT','/F1 8 Tf','50 766 Td',`(Admin export - page ${i+1} of ${pages.length}) Tj`,'ET');
+    content.push('BT','/F1 10 Tf','50 742 Td','15 TL');
+    page.forEach((line,index)=>{
+      if(index===0){
+        content.push('/F2 13 Tf',`(${pdfEscape(line)}) Tj T*`,'/F1 10 Tf');
+      }else if(!line){
+        content.push('() Tj T*');
+      }else if(/^(Description:|Internal notes:|Requirements:|Attachments:|Message:)$/.test(line)){
+        content.push('/F2 10 Tf',`(${pdfEscape(line)}) Tj T*`,'/F1 10 Tf');
+      }else{
+        content.push(`(${pdfEscape(line)}) Tj T*`);
+      }
+    });
+    content.push('ET');
+    content.push('BT','/F1 7 Tf','50 26 Td',`(Generated ${pdfEscape(new Date().toLocaleString())}) Tj`,'ET');
+    const stream=content.join('\n');
+    objects[pageObj]=`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${contentObj} 0 R >>`;
     objects[contentObj]=`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`;
   });
+
   const maxObj=Math.max(...Object.keys(objects).map(Number));
   let pdf='%PDF-1.4\n',offsets=[0];
   for(let i=1;i<=maxObj;i++){offsets[i]=pdf.length;pdf+=`${i} 0 obj\n${objects[i]}\nendobj\n`}
@@ -512,7 +534,8 @@ function makePdf(lines,filename){
   for(let i=1;i<=maxObj;i++)pdf+=String(offsets[i]).padStart(10,'0')+' 00000 n \n';
   pdf+=`trailer\n<< /Size ${maxObj+1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
   const blob=new Blob([pdf],{type:'application/pdf'});
-  const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 async function recordLines(kind,x){
   const lines=[];
