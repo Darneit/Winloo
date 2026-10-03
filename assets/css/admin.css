@@ -23,3 +23,9 @@
   .admin-toolbar-wrap input,.admin-toolbar-wrap select,.admin-toolbar-wrap button{width:100%;max-width:none}
   .admin-inline-controls{width:100%;display:grid;grid-template-columns:1fr}
 }
+
+.admin-row-check{width:16px;height:16px;accent-color:#d9a514;cursor:pointer}
+.admin-table-wrap th:first-child,.admin-table-wrap td:first-child{width:34px;text-align:center}
+.admin-job-select{display:flex;align-items:center;margin-bottom:10px}
+.admin-toolbar .danger,.admin-inline-controls .danger{border-color:#b63a32;color:#b63a32}
+.admin-toolbar .danger:hover,.admin-inline-controls .danger:hover{background:#b63a32;color:#fff}
