@@ -244,12 +244,12 @@ function applicationStatus(id,value){return `<select data-status-type="applicati
 
 function renderEnquiries(){
   const rows=visibleEnquiries();
-  $('#enquiries-body').innerHTML=rows.map(x=>`<tr><td>${esc(fmt(x.created_at))}</td><td><strong>${esc(x.contact_person)}</strong><br><small>${esc(x.email)}</small></td><td>${esc(x.company||'—')}</td><td>${esc(x.project_name)}</td><td>${esc(x.required_service)}</td><td>${enquiryStatus(x.id,x.status)}</td><td><div class="admin-row-actions"><button class="admin-mini-btn" data-open-enquiry="${esc(x.id)}">View</button><button class="admin-mini-btn" data-pdf-enquiry="${esc(x.id)}">PDF</button><button class="admin-mini-btn danger" data-trash-enquiry="${esc(x.id)}">Trash</button></div></td></tr>`).join('')||'<tr><td colspan="7">No enquiries found.</td></tr>';
+  $('#enquiries-body').innerHTML=rows.map(x=>`<tr><td><input type="checkbox" class="admin-row-check" data-select-kind="enquiry" data-select-id="${esc(x.id)}" aria-label="Select enquiry"></td><td>${esc(fmt(x.created_at))}</td><td><strong>${esc(x.contact_person)}</strong><br><small>${esc(x.email)}</small></td><td>${esc(x.company||'—')}</td><td>${esc(x.project_name)}</td><td>${esc(x.required_service)}</td><td>${enquiryStatus(x.id,x.status)}</td><td><div class="admin-row-actions"><button class="admin-mini-btn" data-open-enquiry="${esc(x.id)}">View</button><button class="admin-mini-btn" data-pdf-enquiry="${esc(x.id)}">PDF</button><button class="admin-mini-btn danger" data-trash-enquiry="${esc(x.id)}">Trash</button></div></td></tr>`).join('')||'<tr><td colspan="8">No enquiries found.</td></tr>';
   bindRowActions();
 }
 function renderApplications(){
   const rows=visibleApplications();
-  $('#applications-body').innerHTML=rows.map(x=>`<tr><td>${esc(fmt(x.created_at))}</td><td><strong>${esc(x.full_name)}</strong><br><small>${esc(x.email)}</small></td><td>${esc(x.jobs?.title||x.position)}</td><td>${esc(x.current_location||'—')}</td><td>${esc(x.years_experience??'—')}</td><td>${applicationStatus(x.id,x.status)}</td><td><div class="admin-row-actions"><button class="admin-mini-btn" data-open-application="${esc(x.id)}">View</button><button class="admin-mini-btn" data-pdf-application="${esc(x.id)}">PDF</button><button class="admin-mini-btn danger" data-trash-application="${esc(x.id)}">Trash</button></div></td></tr>`).join('')||'<tr><td colspan="7">No applications found.</td></tr>';
+  $('#applications-body').innerHTML=rows.map(x=>`<tr><td><input type="checkbox" class="admin-row-check" data-select-kind="application" data-select-id="${esc(x.id)}" aria-label="Select application"></td><td>${esc(fmt(x.created_at))}</td><td><strong>${esc(x.full_name)}</strong><br><small>${esc(x.email)}</small></td><td>${esc(x.jobs?.title||x.position)}</td><td>${esc(x.current_location||'—')}</td><td>${esc(x.years_experience??'—')}</td><td>${applicationStatus(x.id,x.status)}</td><td><div class="admin-row-actions"><button class="admin-mini-btn" data-open-application="${esc(x.id)}">View</button><button class="admin-mini-btn" data-pdf-application="${esc(x.id)}">PDF</button><button class="admin-mini-btn danger" data-trash-application="${esc(x.id)}">Trash</button></div></td></tr>`).join('')||'<tr><td colspan="8">No applications found.</td></tr>';
   bindRowActions();
 }
 
@@ -324,13 +324,23 @@ $('#dialog-close').onclick=()=>$('#record-dialog').close();
 
 function renderJobs(){
   const rows=visibleJobs();
-  $('#jobs-admin-list').innerHTML=rows.map(j=>`<article class="admin-job-item"><div class="admin-job-item-head"><div><h3>${esc(j.title)}</h3><p>${esc(j.location)} · ${esc(j.status)}${j.closing_date?' · closes '+esc(j.closing_date):''}</p></div></div><div class="admin-job-actions"><button class="admin-mini-btn" data-edit-job="${esc(j.id)}">Edit</button><button class="admin-mini-btn" data-pdf-job="${esc(j.id)}">PDF</button><button class="admin-mini-btn danger" data-trash-job="${esc(j.id)}">Trash</button></div></article>`).join('')||'<p>No vacancies yet.</p>';
+  $('#jobs-admin-list').innerHTML=rows.map(j=>`<article class="admin-job-item"><div class="admin-job-select"><input type="checkbox" class="admin-row-check" data-select-kind="job" data-select-id="${esc(j.id)}" aria-label="Select vacancy"></div><div class="admin-job-item-head"><div><h3>${esc(j.title)}</h3><p>${esc(j.location)} · ${esc(j.status)}${j.closing_date?' · closes '+esc(j.closing_date):''}</p></div></div><div class="admin-job-actions"><button class="admin-mini-btn" data-edit-job="${esc(j.id)}">Edit</button><button class="admin-mini-btn" data-pdf-job="${esc(j.id)}">PDF</button><button class="admin-mini-btn danger" data-trash-job="${esc(j.id)}">Trash</button></div></article>`).join('')||'<p>No vacancies yet.</p>';
   $$('[data-edit-job]').forEach(b=>b.onclick=()=>editJob(b.dataset.editJob));
   $$('[data-pdf-job]').forEach(b=>b.onclick=()=>downloadRecordPdf('job',b.dataset.pdfJob));
   $$('[data-trash-job]').forEach(b=>b.onclick=()=>moveToTrash('job',b.dataset.trashJob).catch(e=>alert(e.message)));
 }
 function resetJobForm(){const f=$('#job-form');f.reset();f.elements.id.value='';f.elements.location.value='Saudi Arabia';f.elements.sort_order.value='0';$('#job-form-title').textContent='Add vacancy';$('#job-status').textContent=''}
 $('#job-reset').onclick=resetJobForm;
+const jobForm=$('#job-form');
+const jobTitleInput=jobForm?.elements?.title;
+const jobSlugInput=jobForm?.elements?.slug;
+jobTitleInput?.addEventListener('input',()=>{
+  if(!jobForm.elements.id.value && (!jobSlugInput.dataset.edited || !jobSlugInput.value)){
+    jobSlugInput.value=jobTitleInput.value.trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  }
+});
+jobSlugInput?.addEventListener('input',()=>{jobSlugInput.dataset.edited='1'});
+
 function editJob(id){
   const j=jobs.find(x=>x.id===id);if(!j)return;
   const f=$('#job-form');
@@ -341,7 +351,10 @@ $('#job-form').addEventListener('submit',async e=>{
   e.preventDefault();const f=e.currentTarget,s=$('#job-status');s.textContent='Saving…';s.className='admin-form-status';
   const fd=new FormData(f),id=String(fd.get('id')||'');
   const payload={title:String(fd.get('title')||'').trim(),slug:String(fd.get('slug')||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''),department:String(fd.get('department')||'').trim()||null,location:String(fd.get('location')||'').trim(),employment_type:String(fd.get('employment_type')||'').trim()||null,experience:String(fd.get('experience')||'').trim()||null,status:String(fd.get('status')||'draft'),closing_date:String(fd.get('closing_date')||'')||null,description:String(fd.get('description')||'').trim(),requirements:String(fd.get('requirements')||'').split('\n').map(x=>x.trim()).filter(Boolean),sort_order:Number(fd.get('sort_order')||0)};
-  if(payload.status==='published'&&!id)payload.published_at=new Date().toISOString();
+  if(payload.status==='published'){
+    const existing=id?jobs.find(x=>x.id===id):null;
+    if(!existing?.published_at)payload.published_at=new Date().toISOString();
+  }
   try{
     if(id)await patchRow('jobs',id,payload);else await api('/rest/v1/jobs',{method:'POST',body:payload,headers:{Prefer:'return=minimal'}});
     s.textContent='Vacancy saved.';s.classList.add('success');resetJobForm();await loadJobs(true);renderOverview();
@@ -364,14 +377,14 @@ function trashRows(){
 }
 function renderTrash(){
   const rows=trashRows();
-  $('#trash-body').innerHTML=rows.map(x=>`<tr><td>${esc(fmt(x.deleted_at))}</td><td>${esc(x.type[0].toUpperCase()+x.type.slice(1))}</td><td><strong>${esc(x.name)}</strong></td><td>${esc(fmt(x.created_at))}</td><td><div class="admin-row-actions"><button class="admin-mini-btn" data-restore-type="${x.type}" data-restore-id="${esc(x.data.id)}">Restore</button><button class="admin-mini-btn" data-trash-pdf-type="${x.type}" data-trash-pdf-id="${esc(x.data.id)}">PDF</button><button class="admin-mini-btn danger" data-permanent-type="${x.type}" data-permanent-id="${esc(x.data.id)}">Delete forever</button></div></td></tr>`).join('')||'<tr><td colspan="5">Trash is empty.</td></tr>';
+  $('#trash-body').innerHTML=rows.map(x=>`<tr><td><input type="checkbox" class="admin-row-check" data-select-kind="trash" data-select-type="${x.type}" data-select-id="${esc(x.data.id)}" aria-label="Select trashed item"></td><td>${esc(fmt(x.deleted_at))}</td><td>${esc(x.type[0].toUpperCase()+x.type.slice(1))}</td><td><strong>${esc(x.name)}</strong></td><td>${esc(fmt(x.created_at))}</td><td><div class="admin-row-actions"><button class="admin-mini-btn" data-restore-type="${x.type}" data-restore-id="${esc(x.data.id)}">Restore</button><button class="admin-mini-btn" data-trash-pdf-type="${x.type}" data-trash-pdf-id="${esc(x.data.id)}">PDF</button><button class="admin-mini-btn danger" data-permanent-type="${x.type}" data-permanent-id="${esc(x.data.id)}">Delete forever</button></div></td></tr>`).join('')||'<tr><td colspan="6">Trash is empty.</td></tr>';
   $$('[data-restore-id]').forEach(b=>b.onclick=()=>restoreFromTrash(b.dataset.restoreType,b.dataset.restoreId).catch(e=>alert(e.message)));
   $$('[data-trash-pdf-id]').forEach(b=>b.onclick=()=>downloadRecordPdf(b.dataset.trashPdfType,b.dataset.trashPdfId));
   $$('[data-permanent-id]').forEach(b=>b.onclick=()=>permanentDelete(b.dataset.permanentType,b.dataset.permanentId));
 }
 
-async function permanentDelete(kind,id){
-  if(!confirm('Permanently delete this item? This cannot be undone.'))return;
+async function permanentDelete(kind,id,skipConfirm=false){
+  if(!skipConfirm&&!confirm('Permanently delete this item? This cannot be undone.'))return;
   const table=kind==='enquiry'?'enquiries':kind==='application'?'applications':'jobs';
   if(kind!=='job'){
     try{
@@ -385,6 +398,82 @@ async function permanentDelete(kind,id){
     await api(`/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`,{method:'DELETE',headers:{Prefer:'return=minimal'}});
     await loadTrash(true);showLiveToast('Permanently deleted');
   }catch(err){alert(err.message)}
+}
+
+
+function selectedIds(kind){
+  return $('[data-select-kind="'+kind+'"]:checked').map(x=>x.dataset.selectId);
+}
+function selectedTrashRows(){
+  return $('[data-select-kind="trash"]:checked').map(x=>({
+    type:x.dataset.selectType,
+    id:x.dataset.selectId,
+    data:findRecord(x.dataset.selectType,x.dataset.selectId)
+  })).filter(x=>x.data);
+}
+function wireSelectAll(masterId,kind){
+  const master=$(masterId);if(!master)return;
+  master.onchange=()=>$('[data-select-kind="'+kind+'"]').forEach(x=>x.checked=master.checked);
+}
+function csvEscape(v){
+  const s=String(v??'');
+  return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;
+}
+function downloadCsv(filename,headers,rows){
+  const csv=[headers.map(csvEscape).join(','),...rows.map(r=>r.map(csvEscape).join(','))].join('\r\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function exportEnquiriesCsv(rows=visibleEnquiries()){
+  downloadCsv('winloo-enquiries-'+new Date().toISOString().slice(0,10)+'.csv',
+    ['Date','Contact','Company','Email','Phone','Project','Location','Service','Stage','Status'],
+    rows.map(x=>[fmt(x.created_at),x.contact_person,x.company,x.email,x.phone,x.project_name,x.project_location,x.required_service,x.project_stage,x.status]));
+}
+function exportApplicationsCsv(rows=visibleApplications()){
+  downloadCsv('winloo-applications-'+new Date().toISOString().slice(0,10)+'.csv',
+    ['Date','Applicant','Email','Phone','Position','Location','Experience','Status'],
+    rows.map(x=>[fmt(x.created_at),x.full_name,x.email,x.phone,x.jobs?.title||x.position,x.current_location,x.years_experience,x.status]));
+}
+function exportJobsCsv(rows=visibleJobs()){
+  downloadCsv('winloo-vacancies-'+new Date().toISOString().slice(0,10)+'.csv',
+    ['Title','Department','Location','Employment type','Experience','Status','Closing date','Published'],
+    rows.map(x=>[x.title,x.department,x.location,x.employment_type,x.experience,x.status,x.closing_date,fmt(x.published_at)]));
+}
+function exportTrashCsv(rows=trashRows()){
+  downloadCsv('winloo-trash-'+new Date().toISOString().slice(0,10)+'.csv',
+    ['Deleted','Type','Name / Title','Original date'],
+    rows.map(x=>[fmt(x.deleted_at),x.type,x.name,fmt(x.created_at)]));
+}
+async function bulkTrash(kind){
+  const ids=selectedIds(kind);
+  if(!ids.length)return showLiveToast('Select at least one item');
+  if(!confirm('Move '+ids.length+' selected item(s) to Trash?'))return;
+  for(const id of ids)await moveToTrash(kind,id);
+}
+async function bulkPdf(kind){
+  const ids=selectedIds(kind);
+  if(!ids.length)return showLiveToast('Select at least one item');
+  const rows=ids.map(id=>findRecord(kind,id)).filter(Boolean);
+  await downloadCollectionPdf(kind,rows);
+}
+async function bulkRestoreTrash(){
+  const rows=selectedTrashRows();
+  if(!rows.length)return showLiveToast('Select at least one item');
+  for(const x of rows)await restoreFromTrash(x.type,x.id);
+}
+async function bulkDeleteTrash(){
+  const rows=selectedTrashRows();
+  if(!rows.length)return showLiveToast('Select at least one item');
+  if(!confirm('Permanently delete '+rows.length+' selected item(s)? This cannot be undone.'))return;
+  for(const x of rows)await permanentDelete(x.type,x.id,true);
+}
+async function bulkPdfTrash(){
+  const rows=selectedTrashRows();
+  if(!rows.length)return showLiveToast('Select at least one item');
+  const lines=['WINLOO - SELECTED TRASH EXPORT','Generated: '+new Date().toLocaleString(),'Items: '+rows.length,''];
+  for(const r of rows){lines.push(...await recordLines(r.type,r.data),'','------------------------------------------------------------','')}
+  makePdf(lines,'winloo-trash-selected-'+new Date().toISOString().slice(0,10)+'.pdf');
 }
 
 function pdfEscape(s){return plain(s).replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)')}
@@ -484,5 +573,23 @@ $('#download-enquiries-pdf').onclick=()=>downloadCollectionPdf('enquiry',visible
 $('#download-applications-pdf').onclick=()=>downloadCollectionPdf('application',visibleApplications());
 $('#download-jobs-pdf').onclick=()=>downloadCollectionPdf('job',visibleJobs());
 $('#download-trash-pdf').onclick=downloadTrashPdf;
+$('#download-enquiries-csv').onclick=()=>exportEnquiriesCsv();
+$('#download-applications-csv').onclick=()=>exportApplicationsCsv();
+$('#download-jobs-csv').onclick=()=>exportJobsCsv();
+$('#download-trash-csv').onclick=()=>exportTrashCsv();
+
+$('#pdf-selected-enquiries').onclick=()=>bulkPdf('enquiry');
+$('#pdf-selected-applications').onclick=()=>bulkPdf('application');
+$('#pdf-selected-jobs').onclick=()=>bulkPdf('job');
+$('#pdf-selected-trash').onclick=bulkPdfTrash;
+$('#trash-selected-enquiries').onclick=()=>bulkTrash('enquiry').catch(e=>alert(e.message));
+$('#trash-selected-applications').onclick=()=>bulkTrash('application').catch(e=>alert(e.message));
+$('#trash-selected-jobs').onclick=()=>bulkTrash('job').catch(e=>alert(e.message));
+$('#restore-selected-trash').onclick=()=>bulkRestoreTrash().catch(e=>alert(e.message));
+$('#delete-selected-trash').onclick=()=>bulkDeleteTrash().catch(e=>alert(e.message));
+
+wireSelectAll('#select-all-enquiries','enquiry');
+wireSelectAll('#select-all-applications','application');
+wireSelectAll('#select-all-trash','trash');
 
 boot();
