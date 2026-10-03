@@ -35,6 +35,7 @@
           <button class="admin-nav" data-panel="applications"><span>Applications</span><span class="admin-nav-badge" id="badge-applications" hidden>0</span></button>
           <button class="admin-nav" data-panel="jobs"><span>Vacancies</span><span class="admin-nav-badge" id="badge-jobs" hidden>0</span></button>
           <button class="admin-nav" data-panel="trash"><span>Trash</span><span class="admin-nav-badge" id="badge-trash" hidden>0</span></button>
+          <button class="admin-nav" data-panel="audit"><span>Audit Log</span></button>
         </nav>
         <button class="admin-logout" id="admin-logout">Sign out</button>
       </aside>
@@ -52,7 +53,13 @@
             <article><span>Published vacancies</span><strong id="stat-jobs">0</strong></article>
           </div>
           <div class="admin-card">
-            <h2>Recent activity</h2>
+            <div class="admin-card-head">
+              <h2>Recent activity</h2>
+              <div class="admin-inline-controls">
+                <button class="admin-mini-btn" id="download-backup-json" type="button">Full JSON Backup</button>
+                <button class="admin-mini-btn" id="download-backup-csv" type="button">Full CSV Bundle</button>
+              </div>
+            </div>
             <div id="recent-activity" class="admin-activity"></div>
           </div>
         </section>
@@ -73,6 +80,7 @@
             <button class="btn btn-dark" id="refresh-enquiries" type="button">Refresh</button>
           </div>
           <div class="admin-table-wrap"><table><thead><tr><th><input type="checkbox" id="select-all-enquiries" aria-label="Select all enquiries"></th><th>Date</th><th>Contact</th><th>Company</th><th>Project</th><th>Service</th><th>Status</th><th></th></tr></thead><tbody id="enquiries-body"></tbody></table></div>
+          <div class="admin-pagination" id="enquiries-pagination"></div>
         </section>
 
         <section class="admin-panel" data-panel-view="applications" hidden>
@@ -91,6 +99,7 @@
             <button class="btn btn-dark" id="refresh-applications" type="button">Refresh</button>
           </div>
           <div class="admin-table-wrap"><table><thead><tr><th><input type="checkbox" id="select-all-applications" aria-label="Select all applications"></th><th>Date</th><th>Applicant</th><th>Position</th><th>Location</th><th>Experience</th><th>Status</th><th></th></tr></thead><tbody id="applications-body"></tbody></table></div>
+          <div class="admin-pagination" id="applications-pagination"></div>
         </section>
 
         <section class="admin-panel" data-panel-view="jobs" hidden>
@@ -130,6 +139,7 @@
                 </div>
               </div>
               <div id="jobs-admin-list" class="admin-job-list"></div>
+              <div class="admin-pagination" id="jobs-pagination"></div>
             </div>
           </div>
         </section>
@@ -155,6 +165,36 @@
               <tbody id="trash-body"></tbody>
             </table>
           </div>
+          <div class="admin-pagination" id="trash-pagination"></div>
+        </section>
+
+        <section class="admin-panel" data-panel-view="audit" hidden>
+          <div class="admin-toolbar admin-toolbar-wrap">
+            <input id="audit-search" type="search" placeholder="Search audit log">
+            <select id="audit-type-filter" aria-label="Filter audit log by type">
+              <option value="">All types</option>
+              <option value="enquiry">Enquiries</option>
+              <option value="application">Applications</option>
+              <option value="job">Vacancies</option>
+            </select>
+            <select id="audit-action-filter" aria-label="Filter audit log by action">
+              <option value="">All actions</option>
+              <option value="created">Created</option>
+              <option value="updated">Updated</option>
+              <option value="status_changed">Status changed</option>
+              <option value="moved_to_trash">Moved to trash</option>
+              <option value="restored">Restored</option>
+              <option value="deleted_forever">Deleted forever</option>
+            </select>
+            <button class="admin-mini-btn" id="download-audit-csv" type="button">CSV</button>
+          </div>
+          <div class="admin-table-wrap">
+            <table>
+              <thead><tr><th>Date</th><th>Type</th><th>Action</th><th>Record</th><th>Actor</th><th>Details</th></tr></thead>
+              <tbody id="audit-body"></tbody>
+            </table>
+          </div>
+          <div class="admin-pagination" id="audit-pagination"></div>
         </section>
       </div>
     </section>
