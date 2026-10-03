@@ -39,18 +39,29 @@ async function isAdmin(){
     return Array.isArray(rows)&&rows.length===1;
   }catch{return false}
 }
+function showLogin(){
+  const login=$('#login-view'),admin=$('#admin-view');
+  login.hidden=false;admin.hidden=true;
+  login.style.display='grid';admin.style.display='none';
+}
+function showAdmin(){
+  const login=$('#login-view'),admin=$('#admin-view');
+  login.hidden=true;admin.hidden=false;
+  login.style.display='none';admin.style.display='grid';
+}
 async function boot(){
   loadSession();
   if(session?.access_token && await isAdmin())return enterAdmin();
   saveSession(null);
-  $('#login-view').hidden=false;
-  $('#admin-view').hidden=true;
+  showLogin();
 }
 async function enterAdmin(){
-  $('#login-view').hidden=true;
-  $('#admin-view').hidden=false;
+  showAdmin();
   $('#admin-user').textContent=session?.user?.email||'Administrator';
-  try{await refreshAll()}catch(err){alert('Admin data could not load: '+err.message)}
+  try{await refreshAll()}catch(err){
+    const recent=$('#recent-activity');
+    if(recent)recent.innerHTML='<p>Admin loaded, but dashboard data could not be loaded: '+esc(err.message)+'</p>';
+  }
 }
 $('#admin-login-form').addEventListener('submit',async e=>{
   e.preventDefault();
@@ -59,8 +70,9 @@ $('#admin-login-form').addEventListener('submit',async e=>{
   try{
     await signIn($('#admin-email').value.trim(),$('#admin-password').value);
     if(!await isAdmin()){await signOut();throw new Error('This account is not authorised for Winloo Admin.')}
-    status.textContent='';
-    await enterAdmin();
+    status.textContent='Signed in. Opening dashboard…';
+    showAdmin();
+    location.reload();
   }catch(err){
     status.textContent=err.message||'Sign in failed.';
     status.classList.add('error');
