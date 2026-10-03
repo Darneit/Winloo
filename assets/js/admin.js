@@ -11,10 +11,12 @@ const fmt=d=>d?new Date(d).toLocaleString():'—';
 const plain=s=>String(s??'').replace(/[\u2013\u2014]/g,'-').replace(/[^\x20-\x7E\n]/g,' ');
 
 let session=null;
-let enquiries=[],applications=[],jobs=[];
+let enquiries=[],applications=[],jobs=[],auditLogs=[];
 let trashedEnquiries=[],trashedApplications=[],trashedJobs=[];
+const PAGE_SIZE=25;
+const pageState={enquiries:1,applications:1,jobs:1,trash:1,audit:1};
 let liveStarted=false,liveTimer=null,liveBusy=false,initialLiveSnapshot=true;
-let enquiryFingerprint='',applicationFingerprint='',jobsFingerprint='',trashFingerprint='';
+let enquiryFingerprint='',applicationFingerprint='',jobsFingerprint='',trashFingerprint='',auditFingerprint='';
 
 function authHeaders(extra={}){
   return {apikey:SUPABASE_ANON_KEY,Authorization:`Bearer ${session?.access_token||SUPABASE_ANON_KEY}`,...extra};
@@ -121,7 +123,7 @@ $$('.admin-nav').forEach(btn=>btn.addEventListener('click',()=>{
 }));
 
 async function refreshAll(){
-  await Promise.all([loadEnquiries(true),loadApplications(true),loadJobs(true),loadTrash(true)]);
+  await Promise.all([loadEnquiries(true),loadApplications(true),loadJobs(true),loadTrash(true),loadAudit(true)]);
   renderOverview();updateNavBadges();initialLiveSnapshot=false;
 }
 async function loadEnquiries(force=false){
@@ -149,6 +151,13 @@ async function loadJobs(force=false){
   const fp=JSON.stringify(next.map(x=>[x.id,x.status,x.updated_at,x.sort_order]));
   if(force||fp!==jobsFingerprint){
     jobs=next;jobsFingerprint=fp;renderJobs();renderOverview();updateNavBadges();
+  }
+}
+async function loadAudit(force=false){
+  const next=await api('/rest/v1/audit_logs?select=*&order=created_at.desc&limit=500')||[];
+  const fp=JSON.stringify(next.map(x=>[x.id,x.action,x.created_at]));
+  if(force||fp!==auditFingerprint){
+    auditLogs=next;auditFingerprint=fp;renderAudit();
   }
 }
 async function loadTrash(force=false){
@@ -195,7 +204,7 @@ function showLiveToast(message){
 async function silentLiveRefresh(){
   if(liveBusy||document.hidden||!session?.access_token)return;
   liveBusy=true;
-  try{await Promise.all([loadEnquiries(),loadApplications(),loadJobs(),loadTrash()])}catch{}
+  try{await Promise.all([loadEnquiries(),loadApplications(),loadJobs(),loadTrash(),loadAudit()])}catch{}
   finally{liveBusy=false}
 }
 function startLiveUpdates(){
@@ -215,6 +224,25 @@ function renderOverview(){
   $('#recent-activity').innerHTML=activity.length?activity.map(x=>`<div class="admin-activity-item"><span><strong>${esc(x.type)}</strong> · ${esc(x.name)}</span><small>${esc(fmt(x.date))}</small></div>`).join(''):'<p>No submissions yet.</p>';
 }
 
+function paginateRows(rows,key){
+  const totalPages=Math.max(1,Math.ceil(rows.length/PAGE_SIZE));
+  pageState[key]=Math.min(Math.max(pageState[key]||1,1),totalPages);
+  const start=(pageState[key]-1)*PAGE_SIZE;
+  return {rows:rows.slice(start,start+PAGE_SIZE),totalPages,total:rows.length,page:pageState[key]};
+}
+function renderPager(containerId,key,totalPages,total){
+  const el=$(containerId);if(!el)return;
+  if(total<=PAGE_SIZE){el.innerHTML='';return}
+  el.innerHTML=`<button class="admin-mini-btn" data-page-dir="-1" ${pageState[key]<=1?'disabled':''}>Previous</button><span>Page ${pageState[key]} of ${totalPages} · ${total} records</span><button class="admin-mini-btn" data-page-dir="1" ${pageState[key]>=totalPages?'disabled':''}>Next</button>`;
+  el.querySelectorAll('[data-page-dir]').forEach(btn=>btn.onclick=()=>{
+    pageState[key]+=Number(btn.dataset.pageDir);
+    if(key==='enquiries')renderEnquiries();
+    if(key==='applications')renderApplications();
+    if(key==='jobs')renderJobs();
+    if(key==='trash')renderTrash();
+    if(key==='audit')renderAudit();
+  });
+}
 function sortRows(rows,mode,nameGetter){
   const out=[...rows];
   if(mode==='oldest')out.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
@@ -243,14 +271,20 @@ function enquiryStatus(id,value){return `<select data-status-type="enquiry" data
 function applicationStatus(id,value){return `<select data-status-type="application" data-id="${esc(id)}"><option value="new" ${value==='new'?'selected':''}>New</option><option value="reviewing" ${value==='reviewing'?'selected':''}>Reviewing</option><option value="shortlisted" ${value==='shortlisted'?'selected':''}>Shortlisted</option><option value="interview" ${value==='interview'?'selected':''}>Interview</option><option value="hired" ${value==='hired'?'selected':''}>Hired</option><option value="rejected" ${value==='rejected'?'selected':''}>Rejected</option><option value="archived" ${value==='archived'?'selected':''}>Archived</option></select>`}
 
 function renderEnquiries(){
-  const rows=visibleEnquiries();
+  const allRows=visibleEnquiries();
+  const p=paginateRows(allRows,'enquiries');
+  const rows=p.rows;
   $('#enquiries-body').innerHTML=rows.map(x=>`<tr><td><input type="checkbox" class="admin-row-check" data-select-kind="enquiry" data-select-id="${esc(x.id)}" aria-label="Select enquiry"></td><td>${esc(fmt(x.created_at))}</td><td><strong>${esc(x.contact_person)}</strong><br><small>${esc(x.email)}</small></td><td>${esc(x.company||'—')}</td><td>${esc(x.project_name)}</td><td>${esc(x.required_service)}</td><td>${enquiryStatus(x.id,x.status)}</td><td><div class="admin-row-actions"><button class="admin-mini-btn" data-open-enquiry="${esc(x.id)}">View</button><button class="admin-mini-btn" data-pdf-enquiry="${esc(x.id)}">PDF</button><button class="admin-mini-btn danger" data-trash-enquiry="${esc(x.id)}">Trash</button></div></td></tr>`).join('')||'<tr><td colspan="8">No enquiries found.</td></tr>';
   bindRowActions();
+  renderPager('#enquiries-pagination','enquiries',p.totalPages,p.total);
 }
 function renderApplications(){
-  const rows=visibleApplications();
+  const allRows=visibleApplications();
+  const p=paginateRows(allRows,'applications');
+  const rows=p.rows;
   $('#applications-body').innerHTML=rows.map(x=>`<tr><td><input type="checkbox" class="admin-row-check" data-select-kind="application" data-select-id="${esc(x.id)}" aria-label="Select application"></td><td>${esc(fmt(x.created_at))}</td><td><strong>${esc(x.full_name)}</strong><br><small>${esc(x.email)}</small></td><td>${esc(x.jobs?.title||x.position)}</td><td>${esc(x.current_location||'—')}</td><td>${esc(x.years_experience??'—')}</td><td>${applicationStatus(x.id,x.status)}</td><td><div class="admin-row-actions"><button class="admin-mini-btn" data-open-application="${esc(x.id)}">View</button><button class="admin-mini-btn" data-pdf-application="${esc(x.id)}">PDF</button><button class="admin-mini-btn danger" data-trash-application="${esc(x.id)}">Trash</button></div></td></tr>`).join('')||'<tr><td colspan="8">No applications found.</td></tr>';
   bindRowActions();
+  renderPager('#applications-pagination','applications',p.totalPages,p.total);
 }
 
 async function patchRow(table,id,payload){
@@ -323,11 +357,14 @@ async function openApplication(id){
 $('#dialog-close').onclick=()=>$('#record-dialog').close();
 
 function renderJobs(){
-  const rows=visibleJobs();
+  const allRows=visibleJobs();
+  const p=paginateRows(allRows,'jobs');
+  const rows=p.rows;
   $('#jobs-admin-list').innerHTML=rows.map(j=>`<article class="admin-job-item"><div class="admin-job-select"><input type="checkbox" class="admin-row-check" data-select-kind="job" data-select-id="${esc(j.id)}" aria-label="Select vacancy"></div><div class="admin-job-item-head"><div><h3>${esc(j.title)}</h3><p>${esc(j.location)} · ${esc(j.status)}${j.closing_date?' · closes '+esc(j.closing_date):''}</p></div></div><div class="admin-job-actions"><button class="admin-mini-btn" data-edit-job="${esc(j.id)}">Edit</button><button class="admin-mini-btn" data-pdf-job="${esc(j.id)}">PDF</button><button class="admin-mini-btn danger" data-trash-job="${esc(j.id)}">Trash</button></div></article>`).join('')||'<p>No vacancies yet.</p>';
   $$('[data-edit-job]').forEach(b=>b.onclick=()=>editJob(b.dataset.editJob));
   $$('[data-pdf-job]').forEach(b=>b.onclick=()=>downloadRecordPdf('job',b.dataset.pdfJob));
-  $$('[data-trash-job]').forEach(b=>b.onclick=()=>moveToTrash('job',b.dataset.trashJob).catch(e=>alert(e.message)));
+  $('[data-trash-job]').forEach(b=>b.onclick=()=>moveToTrash('job',b.dataset.trashJob).catch(e=>alert(e.message)));
+  renderPager('#jobs-pagination','jobs',p.totalPages,p.total);
 }
 function resetJobForm(){const f=$('#job-form');f.reset();f.elements.id.value='';f.elements.location.value='Saudi Arabia';f.elements.sort_order.value='0';$('#job-form-title').textContent='Add vacancy';$('#job-status').textContent=''}
 $('#job-reset').onclick=resetJobForm;
@@ -376,11 +413,36 @@ function trashRows(){
   return rows;
 }
 function renderTrash(){
-  const rows=trashRows();
+  const allRows=trashRows();
+  const p=paginateRows(allRows,'trash');
+  const rows=p.rows;
   $('#trash-body').innerHTML=rows.map(x=>`<tr><td><input type="checkbox" class="admin-row-check" data-select-kind="trash" data-select-type="${x.type}" data-select-id="${esc(x.data.id)}" aria-label="Select trashed item"></td><td>${esc(fmt(x.deleted_at))}</td><td>${esc(x.type[0].toUpperCase()+x.type.slice(1))}</td><td><strong>${esc(x.name)}</strong></td><td>${esc(fmt(x.created_at))}</td><td><div class="admin-row-actions"><button class="admin-mini-btn" data-restore-type="${x.type}" data-restore-id="${esc(x.data.id)}">Restore</button><button class="admin-mini-btn" data-trash-pdf-type="${x.type}" data-trash-pdf-id="${esc(x.data.id)}">PDF</button><button class="admin-mini-btn danger" data-permanent-type="${x.type}" data-permanent-id="${esc(x.data.id)}">Delete forever</button></div></td></tr>`).join('')||'<tr><td colspan="6">Trash is empty.</td></tr>';
   $$('[data-restore-id]').forEach(b=>b.onclick=()=>restoreFromTrash(b.dataset.restoreType,b.dataset.restoreId).catch(e=>alert(e.message)));
   $$('[data-trash-pdf-id]').forEach(b=>b.onclick=()=>downloadRecordPdf(b.dataset.trashPdfType,b.dataset.trashPdfId));
-  $$('[data-permanent-id]').forEach(b=>b.onclick=()=>permanentDelete(b.dataset.permanentType,b.dataset.permanentId));
+  $('[data-permanent-id]').forEach(b=>b.onclick=()=>permanentDelete(b.dataset.permanentType,b.dataset.permanentId));
+  renderPager('#trash-pagination','trash',p.totalPages,p.total);
+}
+
+function auditRows(){
+  const q=$('#audit-search')?.value.trim().toLowerCase()||'';
+  const type=$('#audit-type-filter')?.value||'';
+  const action=$('#audit-action-filter')?.value||'';
+  return auditLogs.filter(x=>(!type||x.entity_type===type)&&(!action||x.action===action)&&(!q||[
+    x.entity_type,x.action,x.entity_id,JSON.stringify(x.details||{})
+  ].some(v=>String(v||'').toLowerCase().includes(q))));
+}
+function auditRecordLabel(x){
+  const r=findRecord(x.entity_type,x.entity_id);
+  if(!r)return x.entity_id;
+  if(x.entity_type==='enquiry')return r.project_name||r.contact_person||x.entity_id;
+  if(x.entity_type==='application')return r.full_name||r.position||x.entity_id;
+  return r.title||x.entity_id;
+}
+function renderAudit(){
+  const allRows=auditRows();
+  const p=paginateRows(allRows,'audit');
+  $('#audit-body').innerHTML=p.rows.map(x=>`<tr><td>${esc(fmt(x.created_at))}</td><td>${esc(x.entity_type)}</td><td><strong>${esc(x.action.replaceAll('_',' '))}</strong></td><td>${esc(auditRecordLabel(x))}</td><td>${esc(x.actor_user_id||'System')}</td><td><code>${esc(JSON.stringify(x.details||{}))}</code></td></tr>`).join('')||'<tr><td colspan="6">No audit entries found.</td></tr>';
+  renderPager('#audit-pagination','audit',p.totalPages,p.total);
 }
 
 async function permanentDelete(kind,id,skipConfirm=false){
@@ -419,6 +481,11 @@ function csvEscape(v){
   const s=String(v??'');
   return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;
 }
+function downloadJsonFile(filename,data){
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
 function downloadCsv(filename,headers,rows){
   const csv=[headers.map(csvEscape).join(','),...rows.map(r=>r.map(csvEscape).join(','))].join('\r\n');
   const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
@@ -440,10 +507,37 @@ function exportJobsCsv(rows=visibleJobs()){
     ['Title','Department','Location','Employment type','Experience','Status','Closing date','Published'],
     rows.map(x=>[x.title,x.department,x.location,x.employment_type,x.experience,x.status,x.closing_date,fmt(x.published_at)]));
 }
+function exportAuditCsv(rows=auditRows()){
+  downloadCsv('winloo-audit-'+new Date().toISOString().slice(0,10)+'.csv',
+    ['Date','Type','Action','Record ID','Actor User ID','Details'],
+    rows.map(x=>[fmt(x.created_at),x.entity_type,x.action,x.entity_id,x.actor_user_id||'System',JSON.stringify(x.details||{})]));
+}
 function exportTrashCsv(rows=trashRows()){
   downloadCsv('winloo-trash-'+new Date().toISOString().slice(0,10)+'.csv',
     ['Deleted','Type','Name / Title','Original date'],
     rows.map(x=>[fmt(x.deleted_at),x.type,x.name,fmt(x.created_at)]));
+}
+async function downloadFullBackupJson(){
+  const [enquiryFiles,applicationFiles]=await Promise.all([
+    api('/rest/v1/enquiry_files?select=*&order=created_at.asc'),
+    api('/rest/v1/application_files?select=*&order=created_at.asc')
+  ]);
+  downloadJsonFile('winloo-full-backup-'+new Date().toISOString().slice(0,10)+'.json',{
+    exported_at:new Date().toISOString(),
+    enquiries:[...enquiries,...trashedEnquiries],
+    enquiry_files:enquiryFiles||[],
+    applications:[...applications,...trashedApplications],
+    application_files:applicationFiles||[],
+    jobs:[...jobs,...trashedJobs],
+    audit_logs:auditLogs
+  });
+}
+async function downloadFullCsvBundle(){
+  exportEnquiriesCsv([...enquiries,...trashedEnquiries]);
+  exportApplicationsCsv([...applications,...trashedApplications]);
+  exportJobsCsv([...jobs,...trashedJobs]);
+  exportAuditCsv(auditLogs);
+  showLiveToast('CSV exports downloaded');
 }
 async function bulkTrash(kind){
   const ids=selectedIds(kind);
@@ -579,16 +673,19 @@ async function downloadTrashPdf(){
   makePdf(lines,'winloo-trash-export-'+new Date().toISOString().slice(0,10)+'.pdf');
 }
 
-$('#enquiry-search').addEventListener('input',renderEnquiries);
-$('#enquiry-status-filter').addEventListener('change',renderEnquiries);
-$('#enquiry-sort').addEventListener('change',renderEnquiries);
-$('#application-search').addEventListener('input',renderApplications);
-$('#application-status-filter').addEventListener('change',renderApplications);
-$('#application-sort').addEventListener('change',renderApplications);
-$('#job-sort').addEventListener('change',renderJobs);
-$('#trash-search').addEventListener('input',renderTrash);
-$('#trash-type-filter').addEventListener('change',renderTrash);
-$('#trash-sort').addEventListener('change',renderTrash);
+$('#enquiry-search').addEventListener('input',()=>{pageState.enquiries=1;renderEnquiries()});
+$('#enquiry-status-filter').addEventListener('change',()=>{pageState.enquiries=1;renderEnquiries()});
+$('#enquiry-sort').addEventListener('change',()=>{pageState.enquiries=1;renderEnquiries()});
+$('#application-search').addEventListener('input',()=>{pageState.applications=1;renderApplications()});
+$('#application-status-filter').addEventListener('change',()=>{pageState.applications=1;renderApplications()});
+$('#application-sort').addEventListener('change',()=>{pageState.applications=1;renderApplications()});
+$('#job-sort').addEventListener('change',()=>{pageState.jobs=1;renderJobs()});
+$('#trash-search').addEventListener('input',()=>{pageState.trash=1;renderTrash()});
+$('#trash-type-filter').addEventListener('change',()=>{pageState.trash=1;renderTrash()});
+$('#trash-sort').addEventListener('change',()=>{pageState.trash=1;renderTrash()});
+$('#audit-search').addEventListener('input',()=>{pageState.audit=1;renderAudit()});
+$('#audit-type-filter').addEventListener('change',()=>{pageState.audit=1;renderAudit()});
+$('#audit-action-filter').addEventListener('change',()=>{pageState.audit=1;renderAudit()});
 
 $('#refresh-enquiries').onclick=()=>loadEnquiries(true);
 $('#refresh-applications').onclick=()=>loadApplications(true);
@@ -600,6 +697,9 @@ $('#download-enquiries-csv').onclick=()=>exportEnquiriesCsv();
 $('#download-applications-csv').onclick=()=>exportApplicationsCsv();
 $('#download-jobs-csv').onclick=()=>exportJobsCsv();
 $('#download-trash-csv').onclick=()=>exportTrashCsv();
+$('#download-audit-csv').onclick=()=>exportAuditCsv();
+$('#download-backup-json').onclick=()=>downloadFullBackupJson().catch(e=>alert(e.message));
+$('#download-backup-csv').onclick=()=>downloadFullCsvBundle().catch(e=>alert(e.message));
 
 $('#pdf-selected-enquiries').onclick=()=>bulkPdf('enquiry');
 $('#pdf-selected-applications').onclick=()=>bulkPdf('application');
