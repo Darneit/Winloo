@@ -43,30 +43,63 @@ document.querySelectorAll('form[data-email-form]').forEach(form=>form.addEventLi
 }));
 
 // Public careers feed. RLS only exposes currently published vacancies.
+function setupCareerCustomDropdown(jobs){
+  const form=document.querySelector('form[data-email-form="career"]');
+  const native=form?.querySelector('#career-position');
+  const jobId=form?.querySelector('[name="job_id"]');
+  const root=form?.querySelector('[data-career-dropdown]');
+  const trigger=root?.querySelector('.career-dropdown-trigger');
+  const text=root?.querySelector('#career-position-text');
+  const menu=root?.querySelector('.career-dropdown-menu');
+  if(!native||!root||!trigger||!text||!menu)return;
+
+  const current=native.value;
+  const options=jobs.length
+    ? jobs.map(job=>({value:job.title,label:job.title+(job.location?' — '+job.location:''),id:job.id}))
+    : [{value:'General Application',label:'General Application',id:''}];
+
+  native.innerHTML=(jobs.length?'<option value="">Select an open position</option>':'')+options.map(o=>`<option value="${esc(o.value)}" data-job-id="${esc(o.id)}">${esc(o.label)}</option>`).join('');
+  menu.innerHTML=options.map(o=>`<button type="button" class="career-dropdown-option" role="option" data-value="${esc(o.value)}" data-job-id="${esc(o.id)}">${esc(o.label)}</button>`).join('');
+
+  const setValue=(value,id='',label='')=>{
+    native.value=value;
+    if(jobId)jobId.value=id||'';
+    text.textContent=label||native.selectedOptions[0]?.textContent||'Select an open position';
+    trigger.classList.toggle('placeholder',!value);
+    menu.querySelectorAll('.career-dropdown-option').forEach(opt=>opt.classList.toggle('selected',opt.dataset.value===value));
+  };
+
+  if(current&&options.some(o=>o.value===current)){
+    const o=options.find(o=>o.value===current);setValue(o.value,o.id,o.label);
+  }else if(!jobs.length){
+    setValue('General Application','','General Application');
+  }else{
+    setValue('','','Select an open position');
+  }
+
+  trigger.onclick=()=>{
+    const open=menu.hidden;
+    menu.hidden=!open;
+    trigger.setAttribute('aria-expanded',String(open));
+  };
+  menu.querySelectorAll('.career-dropdown-option').forEach(opt=>opt.onclick=()=>{
+    setValue(opt.dataset.value||'',opt.dataset.jobId||'',opt.textContent||'');
+    menu.hidden=true;trigger.setAttribute('aria-expanded','false');
+  });
+  document.addEventListener('click',e=>{
+    if(!root.contains(e.target)){menu.hidden=true;trigger.setAttribute('aria-expanded','false')}
+  },{once:true,capture:true});
+
+  root._setCareerValue=setValue;
+}
+
 const jobsList=document.querySelector('[data-jobs-list]');
 if(jobsList){
   const notice=document.querySelector('[data-jobs-notice]');
   fetch(`${SUPABASE_URL}/rest/v1/jobs?select=id,title,department,location,employment_type,experience,description,requirements,closing_date&status=eq.published&order=sort_order.asc,created_at.desc`,{headers:supabaseHeaders})
     .then(r=>{if(!r.ok)throw new Error('Could not load vacancies');return r.json()})
     .then(jobs=>{
-      const careerForm=document.querySelector('form[data-email-form="career"]');
-      const positionSelect=careerForm?.querySelector('[name="position"]');
-      const jobIdInput=careerForm?.querySelector('[name="job_id"]');
-
-      if(positionSelect){
-        const currentValue=positionSelect.value;
-        if(jobs.length){
-          positionSelect.innerHTML='<option value="">Select an open position</option>'+jobs.map(job=>`<option value="${esc(job.title)}" data-job-id="${esc(job.id)}">${esc(job.title)}${job.location?' — '+esc(job.location):''}</option>`).join('');
-        }else{
-          positionSelect.innerHTML='<option value="General Application">General Application</option>';
-          if(jobIdInput)jobIdInput.value='';
-        }
-        if(currentValue&&[...positionSelect.options].some(o=>o.value===currentValue))positionSelect.value=currentValue;
-        positionSelect.onchange=()=>{
-          const selected=positionSelect.selectedOptions[0];
-          if(jobIdInput)jobIdInput.value=selected?.dataset?.jobId||'';
-        };
-      }
+      setupCareerCustomDropdown(jobs);
 
       if(!jobs.length){jobsList.innerHTML='';if(notice)notice.hidden=false;return}
       if(notice)notice.hidden=true;
@@ -94,11 +127,10 @@ if(jobsList){
         const position=form.querySelector('[name="position"]');
         if(jobId)jobId.value=btn.dataset.jobId||'';
         if(position){
-          position.value=btn.dataset.jobTitle||'';
-          if(position.value!==btn.dataset.jobTitle){
-            const option=[...position.options].find(o=>o.dataset.jobId===btn.dataset.jobId);
-            if(option)position.value=option.value;
-          }
+          const option=[...position.options].find(o=>o.dataset.jobId===btn.dataset.jobId);
+          if(option)position.value=option.value;
+          const dropdown=form.querySelector('[data-career-dropdown]');
+          if(dropdown?._setCareerValue)dropdown._setCareerValue(option?.value||btn.dataset.jobTitle||'',btn.dataset.jobId||'',option?.textContent||btn.dataset.jobTitle||'');
         }
         form.scrollIntoView({behavior:reduced?'auto':'smooth',block:'start'});
         position?.focus({preventScroll:true});
@@ -111,6 +143,7 @@ if(jobsList){
       const jobIdInput=careerForm?.querySelector('[name="job_id"]');
       if(positionSelect)positionSelect.innerHTML='<option value="General Application">General Application</option>';
       if(jobIdInput)jobIdInput.value='';
+      setupCareerCustomDropdown([]);
     });
 }
 })();
