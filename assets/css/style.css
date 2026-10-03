@@ -83,3 +83,7 @@ button[disabled]{cursor:not-allowed;opacity:.65}
 .job-card ul{margin:0 0 20px;padding-left:20px}
 .job-card li+li{margin-top:6px}
 @media (max-width:700px){.job-card{padding:20px}.job-card-top{display:block}.job-card-top .tag{display:inline-block;margin-top:10px}}
+
+#career-position{
+  padding-right:2.75rem;
+}
