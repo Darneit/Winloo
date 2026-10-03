@@ -73,8 +73,8 @@ Deno.serve(async (req: Request) => {
     });
 
     if (payload.job_id) {
-      const { data: job } = await supabase.from("jobs").select("id,status,closing_date").eq("id", payload.job_id).maybeSingle();
-      if (!job || job.status !== "published" || (job.closing_date && new Date(job.closing_date) < new Date(new Date().toISOString().slice(0,10)))) {
+      const { data: job } = await supabase.from("jobs").select("id,status,closing_date,deleted_at").eq("id", payload.job_id).maybeSingle();
+      if (!job || job.deleted_at || job.status !== "published" || (job.closing_date && new Date(job.closing_date) < new Date(new Date().toISOString().slice(0,10)))) {
         return new Response(JSON.stringify({ error: "This vacancy is no longer accepting applications." }), { status: 400, headers: { ...headers, "Content-Type": "application/json" } });
       }
     }
