@@ -1,7 +1,7 @@
 const SUPABASE_ORIGIN = 'https://kljfranzhcbicqlmdzci.supabase.co';
 const TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 const RESEND_API_URL = 'https://api.resend.com/emails';
-const NOTIFICATION_EMAIL = 'Darneitt@gmail.com';
+const NOTIFICATION_EMAIL = 'darneitt@gmail.com';
 const NOTIFICATION_FROM = 'Winloo Website <onboarding@resend.dev>';
 
 function allowedPath(pathname) {
