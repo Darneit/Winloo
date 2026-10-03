@@ -1,5 +1,4 @@
 const SUPABASE_ORIGIN = 'https://kljfranzhcbicqlmdzci.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsamZyYW56aGNiaWNxbG1kemNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEwMTI5MjksImV4cCI6MjEwNjU4ODkyOX0.Q-4RG7m8QelzCQdryNV0eYokD2pwoXv17t2U6Cl43H0';
 
 function allowedPath(pathname) {
   return pathname.startsWith('/auth/v1/')
@@ -16,24 +15,22 @@ export default {
     }
 
     const upstreamPath = url.pathname.slice('/api/supabase'.length);
+
     if (!allowedPath(upstreamPath)) {
-      return new Response('Not found', { status: 404 });
+      return new Response(JSON.stringify({ error: 'not_found' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     const target = new URL(SUPABASE_ORIGIN + upstreamPath);
     target.search = url.search;
 
     const headers = new Headers();
-    const incomingAuth = request.headers.get('Authorization');
-    const incomingContentType = request.headers.get('Content-Type');
-    const incomingPrefer = request.headers.get('Prefer');
-    const incomingRange = request.headers.get('Range');
-
-    headers.set('apikey', SUPABASE_ANON_KEY);
-    headers.set('Authorization', incomingAuth || `Bearer ${SUPABASE_ANON_KEY}`);
-    if (incomingContentType) headers.set('Content-Type', incomingContentType);
-    if (incomingPrefer) headers.set('Prefer', incomingPrefer);
-    if (incomingRange) headers.set('Range', incomingRange);
+    for (const name of ['apikey', 'authorization', 'content-type', 'prefer', 'range']) {
+      const value = request.headers.get(name);
+      if (value) headers.set(name, value);
+    }
 
     const init = {
       method: request.method,
@@ -42,11 +39,22 @@ export default {
     };
 
     if (!['GET', 'HEAD'].includes(request.method)) {
-      init.body = request.body;
-      init.duplex = 'half';
+      init.body = await request.arrayBuffer();
     }
 
-    const upstream = await fetch(target, init);
+    let upstream;
+    try {
+      upstream = await fetch(target, init);
+    } catch (error) {
+      return new Response(JSON.stringify({
+        error: 'upstream_fetch_failed',
+        message: error instanceof Error ? error.message : 'Supabase request failed',
+      }), {
+        status: 502,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     const responseHeaders = new Headers(upstream.headers);
     responseHeaders.delete('access-control-allow-origin');
     responseHeaders.delete('access-control-allow-credentials');
