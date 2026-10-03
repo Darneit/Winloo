@@ -34,6 +34,7 @@
           <button class="admin-nav" data-panel="enquiries"><span>Enquiries</span><span class="admin-nav-badge" id="badge-enquiries" hidden>0</span></button>
           <button class="admin-nav" data-panel="applications"><span>Applications</span><span class="admin-nav-badge" id="badge-applications" hidden>0</span></button>
           <button class="admin-nav" data-panel="jobs"><span>Vacancies</span><span class="admin-nav-badge" id="badge-jobs" hidden>0</span></button>
+          <button class="admin-nav" data-panel="trash"><span>Trash</span><span class="admin-nav-badge" id="badge-trash" hidden>0</span></button>
         </nav>
         <button class="admin-logout" id="admin-logout">Sign out</button>
       </aside>
@@ -57,12 +58,32 @@
         </section>
 
         <section class="admin-panel" data-panel-view="enquiries" hidden>
-          <div class="admin-toolbar"><input id="enquiry-search" type="search" placeholder="Search enquiries"><button class="btn btn-dark" id="refresh-enquiries" type="button">Refresh</button></div>
+          <div class="admin-toolbar admin-toolbar-wrap">
+            <input id="enquiry-search" type="search" placeholder="Search enquiries">
+            <select id="enquiry-status-filter" aria-label="Filter enquiries by status">
+              <option value="">All statuses</option><option value="new">New</option><option value="contacted">Contacted</option><option value="in_progress">In progress</option><option value="closed">Closed</option><option value="spam">Spam</option>
+            </select>
+            <select id="enquiry-sort" aria-label="Sort enquiries">
+              <option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="name">Contact A–Z</option><option value="status">Status</option>
+            </select>
+            <button class="admin-mini-btn" id="download-enquiries-pdf" type="button">Download PDF</button>
+            <button class="btn btn-dark" id="refresh-enquiries" type="button">Refresh</button>
+          </div>
           <div class="admin-table-wrap"><table><thead><tr><th>Date</th><th>Contact</th><th>Company</th><th>Project</th><th>Service</th><th>Status</th><th></th></tr></thead><tbody id="enquiries-body"></tbody></table></div>
         </section>
 
         <section class="admin-panel" data-panel-view="applications" hidden>
-          <div class="admin-toolbar"><input id="application-search" type="search" placeholder="Search applications"><button class="btn btn-dark" id="refresh-applications" type="button">Refresh</button></div>
+          <div class="admin-toolbar admin-toolbar-wrap">
+            <input id="application-search" type="search" placeholder="Search applications">
+            <select id="application-status-filter" aria-label="Filter applications by status">
+              <option value="">All statuses</option><option value="new">New</option><option value="reviewing">Reviewing</option><option value="shortlisted">Shortlisted</option><option value="interview">Interview</option><option value="hired">Hired</option><option value="rejected">Rejected</option><option value="archived">Archived</option>
+            </select>
+            <select id="application-sort" aria-label="Sort applications">
+              <option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="name">Applicant A–Z</option><option value="status">Status</option>
+            </select>
+            <button class="admin-mini-btn" id="download-applications-pdf" type="button">Download PDF</button>
+            <button class="btn btn-dark" id="refresh-applications" type="button">Refresh</button>
+          </div>
           <div class="admin-table-wrap"><table><thead><tr><th>Date</th><th>Applicant</th><th>Position</th><th>Location</th><th>Experience</th><th>Status</th><th></th></tr></thead><tbody id="applications-body"></tbody></table></div>
         </section>
 
@@ -90,9 +111,36 @@
               </form>
             </div>
             <div class="admin-card">
-              <h2>Vacancies</h2>
+              <div class="admin-card-head">
+                <h2>Vacancies</h2>
+                <div class="admin-inline-controls">
+                  <select id="job-sort" aria-label="Sort vacancies">
+                    <option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="title">Title A–Z</option><option value="status">Status</option>
+                  </select>
+                  <button class="admin-mini-btn" id="download-jobs-pdf" type="button">Download PDF</button>
+                </div>
+              </div>
               <div id="jobs-admin-list" class="admin-job-list"></div>
             </div>
+          </div>
+        </section>
+
+        <section class="admin-panel" data-panel-view="trash" hidden>
+          <div class="admin-toolbar admin-toolbar-wrap">
+            <input id="trash-search" type="search" placeholder="Search trash">
+            <select id="trash-type-filter" aria-label="Filter trash by type">
+              <option value="">Everything</option><option value="enquiry">Enquiries</option><option value="application">Applications</option><option value="job">Vacancies</option>
+            </select>
+            <select id="trash-sort" aria-label="Sort trash">
+              <option value="newest">Recently deleted</option><option value="oldest">Oldest deleted</option><option value="name">Name A–Z</option>
+            </select>
+            <button class="admin-mini-btn" id="download-trash-pdf" type="button">Download PDF</button>
+          </div>
+          <div class="admin-table-wrap">
+            <table>
+              <thead><tr><th>Deleted</th><th>Type</th><th>Name / Title</th><th>Original date</th><th></th></tr></thead>
+              <tbody id="trash-body"></tbody>
+            </table>
           </div>
         </section>
       </div>
