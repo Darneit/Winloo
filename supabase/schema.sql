@@ -286,6 +286,7 @@ create table if not exists public.audit_logs (
 
 create index if not exists idx_audit_logs_created_at on public.audit_logs(created_at desc);
 create index if not exists idx_audit_logs_entity on public.audit_logs(entity_type, entity_id);
+create index if not exists idx_audit_logs_actor_user_id on public.audit_logs(actor_user_id);
 
 alter table public.audit_logs enable row level security;
 grant select, insert on public.audit_logs to authenticated, service_role;
