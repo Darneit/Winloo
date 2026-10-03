@@ -8,7 +8,7 @@ document.querySelectorAll('.project-brand img').forEach(img=>{img.addEventListen
 // File input feedback without changing the email-based submission flow.
 document.querySelectorAll('input[type="file"]').forEach(input=>{const field=input.closest('.field');if(!field)return;const status=document.createElement('div');status.className='file-selection';status.setAttribute('aria-live','polite');field.appendChild(status);input.addEventListener('change',()=>{const names=[...input.files].map(f=>f.name);status.textContent=names.length?(names.length===1?`Selected: ${names[0]}`:`${names.length} files selected`):''})});
 // Supabase backend integration.
-const SUPABASE_URL='https://kljfranzhcbicqlmdzci.supabase.co';
+const SUPABASE_URL='/api/supabase';
 const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsamZyYW56aGNiaWNxbG1kemNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEwMTI5MjksImV4cCI6MjEwNjU4ODkyOX0.Q-4RG7m8QelzCQdryNV0eYokD2pwoXv17t2U6Cl43H0';
 const supabaseHeaders={apikey:SUPABASE_ANON_KEY,Authorization:`Bearer ${SUPABASE_ANON_KEY}`};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
